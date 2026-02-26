@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robo-Advisor Dashboard - Figma Design Reference</title>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #141922;
+            --bg-tertiary: #1a2030;
+            --accent-primary: #00ffaa;
+            --accent-secondary: #00d4ff;
+            --accent-danger: #ff4466;
+            --text-primary: #e8edf4;
+            --text-secondary: #8b94a8;
+            --text-muted: #5a6478;
+            --border: #252d3f;
+            --success: #00ff88;
+            --warning: #ffbb00;
+        }
+
+        body {
+            font-family: 'Instrument Sans', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .background-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, rgba(0, 255, 170, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 255, 170, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .background-gradient {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(0, 255, 170, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 60%, rgba(0, 212, 255, 0.06) 0%, transparent 50%);
+            animation: gradientShift 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-5%, -5%) rotate(2deg); }
+        }
+
+        /* Layout */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 32px 24px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 48px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--bg-primary);
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-section {
+            margin-bottom: 32px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: rgba(0, 255, 170, 0.05);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: rgba(0, 255, 170, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            opacity: 0.7;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 32px 40px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .header-title {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .header-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 255, 170, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-primary);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-primary), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-badge.positive {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--success);
+        }
+
+        .stat-badge.negative {
+            background: rgba(255, 68, 102, 0.15);
+            color: var(--accent-danger);
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(0, 255, 170, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            border-color: var(--accent-primary);
+            background: rgba(0, 255, 170, 0.05);
+        }
+
+        /* Chart */
+        .chart-container {
+            height: 320px;
+            position: relative;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, 
+                rgba(0, 255, 170, 0.05) 0%, 
+                rgba(0, 212, 255, 0.05) 100%);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            background: linear-gradient(to top, 
+                rgba(0, 255, 170, 0.2) 0%,
+                rgba(0, 255, 170, 0) 100%);
+            clip-path: polygon(
+                0% 100%, 
+                0% 45%, 
+                10% 50%, 
+                20% 35%, 
+                30% 40%, 
+                40% 25%, 
+                50% 30%, 
+                60% 20%, 
+                70% 28%, 
+                80% 15%, 
+                90% 22%, 
+                100% 10%, 
+                100% 100%
+            );
+            animation: chartPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes chartPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+
+        .chart-metrics {
+            display: flex;
+            gap: 32px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .metric {
+            flex: 1;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* AI Insights */
+        .insights-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .insight-item {
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            border-left: 3px solid var(--accent-primary);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .insight-item:hover {
+            background: rgba(0, 255, 170, 0.05);
+            transform: translateX(4px);
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .insight-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .insight-title {
+            font-size: 14px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .insight-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .insight-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Portfolio Allocation */
+        .allocation-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .allocation-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .allocation-item:hover {
+            background: rgba(0, 255, 170, 0.05);
+        }
+
+        .allocation-color {
+            width: 12px;
+            height: 48px;
+            border-radius: 6px;
+        }
+
+        .allocation-info {
+            flex: 1;
+        }
+
+        .allocation-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .allocation-type {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .allocation-stats {
+            text-align: right;
+        }
+
+        .allocation-percentage {
+            font-size: 20px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 4px;
+        }
+
+        .allocation-value {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .activity-item {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-item:hover {
+            padding-left: 8px;
+        }
+
+        .activity-icon-wrapper {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .activity-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .activity-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .activity-amount {
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .activity-amount-value {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .activity-amount-change {
+            font-size: 12px;
+            color: var(--success);
+            margin-top: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card, .card {
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <div class="background-grid"></div>
+    <div class="background-gradient"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">RA</div>
+            <div class="logo-text">RoboAdvisor</div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Main</div>
+            <a href="#" class="nav-item active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Dashboard
+            </a>
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
+                </svg>
+                Portfolio
+            </a>
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                Analytics
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Trading</div>
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                Transactions
+            </a>
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Funds
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Insights</div>
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                AI Recommendations
+            </a>
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Reports
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Account</div>
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Profile
+            </a>
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m5.2-14.2l-4.2 4.2m-2.4 2.4l-4.2 4.2m14.4 0l-4.2-4.2m-2.4-2.4l-4.2-4.2"></path>
+                </svg>
+                Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <h1>Portfolio Overview</h1>
+                <div class="header-subtitle">Last updated: 2 minutes ago</div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export
+                </button>
+                <button class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Invest More
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-label">Total Portfolio Value</div>
+                    <div class="stat-badge positive">+12.4%</div>
+                </div>
+                <div class="stat-value">$247,856</div>
+                <div class="stat-change">+$27,423 this month</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-label">Total Returns</div>
+                    <div class="stat-badge positive">+8.9%</div>
+                </div>
+                <div class="stat-value">$22,054</div>
+                <div class="stat-change">+$3,142 this month</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-label">Monthly Contribution</div>
+                    <div class="stat-badge positive">Active</div>
+                </div>
+                <div class="stat-value">$5,000</div>
+                <div class="stat-change">Next: Feb 1, 2026</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-label">Risk Score</div>
+                    <div class="stat-badge negative">Moderate</div>
+                </div>
+                <div class="stat-value">6.2/10</div>
+                <div class="stat-change">Balanced portfolio</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Performance Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Performance Overview</div>
+                    <div class="card-actions">
+                        <button class="icon-btn">1M</button>
+                        <button class="icon-btn">3M</button>
+                        <button class="icon-btn">1Y</button>
+                        <button class="icon-btn">ALL</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        <div class="chart-line"></div>
+                    </div>
+                </div>
+                <div class="chart-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Starting Value</div>
+                        <div class="metric-value">$220,433</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Current Value</div>
+                        <div class="metric-value">$247,856</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Total Gain</div>
+                        <div class="metric-value" style="color: var(--success)">+$27,423</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Insights -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">AI Insights</div>
+                    <div class="card-actions">
+                        <button class="icon-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="1 4 1 10 7 10"></polyline>
+                                <polyline points="23 20 23 14 17 14"></polyline>
+                                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="insights-list">
+                    <div class="insight-item">
+                        <div class="insight-header">
+                            <div class="insight-icon">🎯</div>
+                            <div class="insight-title">Portfolio Rebalancing</div>
+                            <div class="insight-time">2m ago</div>
+                        </div>
+                        <div class="insight-description">
+                            Your tech allocation is 3% above target. Consider rebalancing to maintain optimal risk profile.
+                        </div>
+                    </div>
+
+                    <div class="insight-item">
+                        <div class="insight-header">
+                            <div class="insight-icon">📈</div>
+                            <div class="insight-title">Market Opportunity</div>
+                            <div class="insight-time">1h ago</div>
+                        </div>
+                        <div class="insight-description">
+                            Renewable energy sector showing strong momentum. Suggested allocation increase: +2.5%
+                        </div>
+                    </div>
+
+                    <div class="insight-item">
+                        <div class="insight-header">
+                            <div class="insight-icon">💰</div>
+                            <div class="insight-title">Tax Optimization</div>
+                            <div class="insight-time">3h ago</div>
+                        </div>
+                        <div class="insight-description">
+                            Tax-loss harvesting opportunity detected. Potential savings: $1,240 this year.
+                        </div>
+                    </div>
+
+                    <div class="insight-item">
+                        <div class="insight-header">
+                            <div class="insight-icon">⚡</div>
+                            <div class="insight-title">Volatility Alert</div>
+                            <div class="insight-time">5h ago</div>
+                        </div>
+                        <div class="insight-description">
+                            Market volatility increased 15%. Your portfolio remains within risk tolerance.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Grid -->
+        <div class="dashboard-grid">
+            <!-- Asset Allocation -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Asset Allocation</div>
+                    <div class="card-actions">
+                        <button class="icon-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="allocation-grid">
+                    <div class="allocation-item">
+                        <div class="allocation-color" style="background: var(--accent-primary);"></div>
+                        <div class="allocation-info">
+                            <div class="allocation-name">Technology</div>
+                            <div class="allocation-type">Stocks • ETFs</div>
+                        </div>
+                        <div class="allocation-stats">
+                            <div class="allocation-percentage">32%</div>
+                            <div class="allocation-value">$79,314</div>
+                        </div>
+                    </div>
+
+                    <div class="allocation-item">
+                        <div class="allocation-color" style="background: var(--accent-secondary);"></div>
+                        <div class="allocation-info">
+                            <div class="allocation-name">Healthcare</div>
+                            <div class="allocation-type">Stocks • Bonds</div>
+                        </div>
+                        <div class="allocation-stats">
+                            <div class="allocation-percentage">24%</div>
+                            <div class="allocation-value">$59,485</div>
+                        </div>
+                    </div>
+
+                    <div class="allocation-item">
+                        <div class="allocation-color" style="background: #00ff88;"></div>
+                        <div class="allocation-info">
+                            <div class="allocation-name">Real Estate</div>
+                            <div class="allocation-type">REITs</div>
+                        </div>
+                        <div class="allocation-stats">
+                            <div class="allocation-percentage">18%</div>
+                            <div class="allocation-value">$44,614</div>
+                        </div>
+                    </div>
+
+                    <div class="allocation-item">
+                        <div class="allocation-color" style="background: #ffbb00;"></div>
+                        <div class="allocation-info">
+                            <div class="allocation-name">Bonds</div>
+                            <div class="allocation-type">Government • Corporate</div>
+                        </div>
+                        <div class="allocation-stats">
+                            <div class="allocation-percentage">15%</div>
+                            <div class="allocation-value">$37,178</div>
+                        </div>
+                    </div>
+
+                    <div class="allocation-item">
+                        <div class="allocation-color" style="background: #ff6b9d;"></div>
+                        <div class="allocation-info">
+                            <div class="allocation-name">International</div>
+                            <div class="allocation-type">Emerging Markets</div>
+                        </div>
+                        <div class="allocation-stats">
+                            <div class="allocation-percentage">11%</div>
+                            <div class="allocation-value">$27,264</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Recent Activity</div>
+                    <div class="card-actions">
+                        <button class="icon-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="activity-feed">
+                    <div class="activity-item">
+                        <div class="activity-icon-wrapper">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Dividend Received</div>
+                            <div class="activity-description">VTSAX Quarterly Distribution</div>
+                            <div class="activity-time">2 hours ago</div>
+                        </div>
+                        <div class="activity-amount">
+                            <div class="activity-amount-value" style="color: var(--success)">+$342.18</div>
+                            <div class="activity-amount-change">+0.14%</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon-wrapper">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                <polyline points="17 6 23 6 23 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Portfolio Rebalanced</div>
+                            <div class="activity-description">Auto-rebalancing completed</div>
+                            <div class="activity-time">Yesterday</div>
+                        </div>
+                        <div class="activity-amount">
+                            <div class="activity-amount-value">—</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon-wrapper">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Monthly Contribution</div>
+                            <div class="activity-description">Automatic deposit processed</div>
+                            <div class="activity-time">3 days ago</div>
+                        </div>
+                        <div class="activity-amount">
+                            <div class="activity-amount-value" style="color: var(--success)">+$5,000</div>
+                            <div class="activity-amount-change">+2.0%</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon-wrapper">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Goal Milestone</div>
+                            <div class="activity-description">Retirement fund: 45% complete</div>
+                            <div class="activity-time">1 week ago</div>
+                        </div>
+                        <div class="activity-amount">
+                            <div class="activity-amount-value">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
