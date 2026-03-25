@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from datetime import datetime
 
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.subscription import Subscription, SubscriptionTier, SubscriptionStatus, tier_has_feature
 from app.api.deps import get_current_user
 
@@ -13,6 +13,9 @@ async def get_user_subscription(user_id: str) -> Subscription | None:
 async def require_active_subscription(
     current_user: User = Depends(get_current_user),
 ) -> User:
+    if current_user.role == UserRole.admin:
+        return current_user
+
     subscription = await get_user_subscription(current_user.id)
 
     if not subscription:
@@ -40,6 +43,9 @@ def require_subscription(feature: str):
     async def check_subscription(
         current_user: User = Depends(get_current_user),
     ) -> User:
+        if current_user.role == UserRole.admin:
+            return current_user
+
         subscription = await get_user_subscription(current_user.id)
 
         if not subscription:
