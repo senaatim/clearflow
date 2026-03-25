@@ -25,6 +25,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3001",
         "http://localhost",
         "http://127.0.0.1",
+        "https://clearflow.onrender.com",
     ]
 
     groq_api_key: str = ""

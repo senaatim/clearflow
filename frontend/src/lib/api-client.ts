@@ -33,7 +33,7 @@ function camelToSnake(obj: unknown): unknown {
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: `${API_BASE_URL}/api/v1`,
+  baseURL: `${API_BASE_URL.replace(/\/$/, '')}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
   },
