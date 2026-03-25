@@ -209,7 +209,7 @@ export default function RecommendationsPage() {
                             <Badge variant={statusColors[status as keyof typeof statusColors] || 'neutral'}>
                               {status}
                             </Badge>
-                            {(details as Record<string, unknown>).symbol && (
+                            {!!(details as Record<string, unknown>).symbol && (
                               <Badge variant="neutral">{(details as Record<string, unknown>).symbol as string}</Badge>
                             )}
                             {rec.createdAt && (
