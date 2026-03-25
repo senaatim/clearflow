@@ -37,11 +37,11 @@ const statusColors = {
 } as const;
 
 export default function RecommendationsPage() {
-  const [recommendations, setRecommendations] = useState<Record<string, unknown>[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [executionModalOpen, setExecutionModalOpen] = useState(false);
-  const [selectedRecommendation, setSelectedRecommendation] = useState<Record<string, unknown> | null>(null);
+  const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
   const { canAccess } = useSubscriptionStore();
 
   const canExecuteTrades = canAccess(Features.BROKER_EXECUTION);
@@ -53,7 +53,7 @@ export default function RecommendationsPage() {
           recommendationApi.list().catch(() => ({ data: [] })),
           portfolioApi.list().catch(() => ({ data: [] })),
         ]);
-        const recs = Array.isArray(recsRes.data) ? recsRes.data : [];
+        const recs = Array.isArray(recsRes.data) ? recsRes.data as Recommendation[] : [];
         setRecommendations(recs);
         const ports = Array.isArray(portfoliosRes.data) ? portfoliosRes.data : [];
         setPortfolios(ports);
@@ -70,14 +70,14 @@ export default function RecommendationsPage() {
     try {
       const res = await recommendationApi.generate();
       if (Array.isArray(res.data)) {
-        setRecommendations(res.data);
+        setRecommendations(res.data as Recommendation[]);
       }
     } catch (err) {
       console.error('Failed to generate recommendations:', err);
     }
   };
 
-  const handleRequestExecution = (rec: Record<string, unknown>) => {
+  const handleRequestExecution = (rec: Recommendation) => {
     setSelectedRecommendation(rec);
     setExecutionModalOpen(true);
   };
@@ -242,7 +242,7 @@ export default function RecommendationsPage() {
                         )}
                         {status === 'pending' && (
                           <div className="flex gap-2 w-full sm:w-auto flex-wrap">
-                            {canExecuteTrades && (recType === 'buy' || recType === 'sell') && details.symbol && (
+                            {canExecuteTrades && (recType === 'buy' || recType === 'sell') && !!details.symbol && (
                               <button
                                 onClick={() => handleRequestExecution(rec)}
                                 className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 md:px-4 py-2 bg-accent-secondary/10 text-accent-secondary rounded-lg hover:bg-accent-secondary/20 transition-colors text-sm font-medium"
