@@ -38,7 +38,7 @@ export function ActivityFeed({ portfolioId }: ActivityFeedProps) {
         const transactions = Array.isArray(res.data) ? res.data : [];
         const mapped: ActivityItem[] = transactions.map((tx: Record<string, unknown>) => ({
           id: tx.id as string,
-          type: (tx.type as string) || 'buy',
+          type: ((tx.type as string) || 'buy') as ActivityItem['type'],
           title: `${String(tx.type || 'Transaction').charAt(0).toUpperCase() + String(tx.type || 'transaction').slice(1)}${tx.symbol ? ` - ${tx.symbol}` : ''}`,
           description: (tx.notes as string) || `${tx.type} transaction`,
           amount: tx.totalAmount as number | undefined,
