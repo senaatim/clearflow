@@ -61,7 +61,7 @@ export default function SubscriptionPage() {
     try {
       const response = await subscriptionApi.subscribe({
         tier: selectedTier,
-        billing_period: billingPeriod,
+        billingPeriod: billingPeriod,
       });
       setSubscription(response.data);
     } catch (err: any) {
@@ -83,7 +83,7 @@ export default function SubscriptionPage() {
         try {
           const response = await subscriptionApi.subscribe({
             tier: selectedTier,
-            billing_period: billingPeriod,
+            billingPeriod: billingPeriod,
           });
           setSubscription(response.data);
         } catch (subErr: any) {
