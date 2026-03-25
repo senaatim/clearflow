@@ -9,10 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { adminApi } from '@/lib/api-client';
 import {
-  Users,
-  DollarSign,
-  Briefcase,
-  TrendingUp,
   ArrowRight,
   Clock,
 } from 'lucide-react';
@@ -65,29 +61,22 @@ export default function AdminDashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
         <StatCard
-          title="Total Users"
+          label="Total Users"
           value={stats?.totalUsers?.toString() || '0'}
-          icon={<Users className="w-5 h-5" />}
           subtitle={`${stats?.activeUsers || 0} active`}
         />
         <StatCard
-          title="Pending Deposits"
+          label="Pending Deposits"
           value={stats?.pendingDeposits?.toString() || '0'}
-          icon={<DollarSign className="w-5 h-5" />}
-          variant="warning"
           subtitle={`${stats?.totalDepositsToday || 0} today`}
         />
         <StatCard
-          title="Pending Trades"
+          label="Pending Trades"
           value={stats?.pendingTrades?.toString() || '0'}
-          icon={<Briefcase className="w-5 h-5" />}
-          variant="warning"
         />
         <StatCard
-          title="Total AUM"
+          label="Total AUM"
           value={formatCurrency(stats?.totalAum || 0)}
-          icon={<TrendingUp className="w-5 h-5" />}
-          variant="positive"
         />
       </div>
 
