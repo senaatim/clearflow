@@ -12,7 +12,6 @@ import { BrokerDisclaimer } from '@/components/ui/disclaimer';
 import { tradeApi } from '@/lib/api-client';
 import { Features } from '@/stores/subscription-store';
 import {
-  TrendingUp,
   Clock,
   CheckCircle,
   XCircle,
@@ -98,29 +97,10 @@ function TradeRequestsContent() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-        <StatCard
-          title="Total Requests"
-          value={stats.total.toString()}
-          icon={<TrendingUp className="w-5 h-5" />}
-        />
-        <StatCard
-          title="Pending"
-          value={stats.pending.toString()}
-          icon={<Clock className="w-5 h-5" />}
-          variant="warning"
-        />
-        <StatCard
-          title="Executed"
-          value={stats.executed.toString()}
-          icon={<CheckCircle className="w-5 h-5" />}
-          variant="positive"
-        />
-        <StatCard
-          title="Canceled"
-          value={stats.canceled.toString()}
-          icon={<XCircle className="w-5 h-5" />}
-          variant="negative"
-        />
+        <StatCard label="Total Requests" value={stats.total.toString()} />
+        <StatCard label="Pending" value={stats.pending.toString()} />
+        <StatCard label="Executed" value={stats.executed.toString()} />
+        <StatCard label="Canceled" value={stats.canceled.toString()} />
       </div>
 
       {/* Filters */}
