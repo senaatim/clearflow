@@ -209,8 +209,8 @@ export default function RecommendationsPage() {
                             <Badge variant={statusColors[status as keyof typeof statusColors] || 'neutral'}>
                               {status}
                             </Badge>
-                            {details.symbol && (
-                              <Badge variant="neutral">{details.symbol as string}</Badge>
+                            {(details as Record<string, unknown>).symbol && (
+                              <Badge variant="neutral">{(details as Record<string, unknown>).symbol as string}</Badge>
                             )}
                             {rec.createdAt && (
                               <span className="text-xs text-text-muted font-mono">
