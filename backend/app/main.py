@@ -6,8 +6,9 @@ A subsidiary of Jbryanson Globals Limited
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.database import init_db
@@ -60,6 +61,15 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=3600,
 )
+
+# Global exception handler — ensures CORS headers are present even on 500s
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 # Include API routes
 app.include_router(api_router, prefix=settings.api_prefix)
