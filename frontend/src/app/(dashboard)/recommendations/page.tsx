@@ -212,14 +212,14 @@ export default function RecommendationsPage() {
                             {!!(details as Record<string, unknown>).symbol && (
                               <Badge variant="neutral">{(details as Record<string, unknown>).symbol as string}</Badge>
                             )}
-                            {rec.createdAt && (
+                            {!!rec.createdAt && (
                               <span className="text-xs text-text-muted font-mono">
                                 {formatRelativeTime(rec.createdAt as string)}
                               </span>
                             )}
                           </div>
                         </div>
-                        {rec.confidenceScore && (
+                        {!!rec.confidenceScore && (
                           <div className="text-left sm:text-right flex-shrink-0">
                             <div className="text-xs text-text-muted mb-1">Confidence</div>
                             <div className="text-base md:text-lg font-bold font-mono text-accent-primary">
@@ -232,7 +232,7 @@ export default function RecommendationsPage() {
                         {rec.description as string}
                       </p>
                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        {rec.potentialImpact && (
+                        {!!rec.potentialImpact && (
                           <div className="text-sm">
                             <span className="text-text-muted">Potential Impact: </span>
                             <span className="text-success font-semibold font-mono">
