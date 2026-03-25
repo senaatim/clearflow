@@ -9,6 +9,7 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatCard } from '@/components/ui/stat-card';
 import { riskApi, portfolioApi } from '@/lib/api-client';
+import { UpgradeGate } from '@/components/ui/upgrade-gate';
 import type { RiskScore, VolatilityData } from '@/types';
 
 const riskBreakdownColors: Record<string, string> = {
@@ -47,6 +48,7 @@ export default function RiskManagementPage() {
   const [volatilityData, setVolatilityData] = useState<VolatilityData[]>([]);
   const [riskAlerts, setRiskAlerts] = useState<RiskAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
 
   // Stress test
   const [portfolioId, setPortfolioId] = useState('');
@@ -75,8 +77,8 @@ export default function RiskManagementPage() {
         setVolatilityData(Array.isArray(volRes.data) ? volRes.data : volRes.data.data ?? []);
         // Backend returns { alerts: [...], total: N }
         setRiskAlerts(Array.isArray(alertsRes.data) ? alertsRes.data : alertsRes.data.alerts ?? []);
-      } catch {
-        // empty state shown below
+      } catch (err: any) {
+        if (err?.response?.status === 403) setForbidden(true);
       } finally {
         setLoading(false);
       }
@@ -120,6 +122,19 @@ export default function RiskManagementPage() {
   const volChange = latestVol && prevVol
     ? ((latestVol.volatility - prevVol.volatility) / prevVol.volatility * 100).toFixed(1)
     : null;
+
+  if (forbidden) {
+    return (
+      <>
+        <Header title="Risk Management" subtitle="Analyse and manage your portfolio risk" />
+        <UpgradeGate
+          requiredTier="premium"
+          featureName="Risk Management"
+          description="Access risk scores, volatility analysis, and stress testing with ClearFlow Premium."
+        />
+      </>
+    );
+  }
 
   return (
     <>

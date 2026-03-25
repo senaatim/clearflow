@@ -1,31 +1,19 @@
 from fastapi import Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from datetime import datetime
 
-from app.database import get_db
 from app.models.user import User
 from app.models.subscription import Subscription, SubscriptionTier, SubscriptionStatus, tier_has_feature
 from app.api.deps import get_current_user
 
 
-async def get_user_subscription(
-    db: AsyncSession,
-    user_id: str,
-) -> Subscription | None:
-    """Get the subscription for a user."""
-    result = await db.execute(
-        select(Subscription).where(Subscription.user_id == user_id)
-    )
-    return result.scalar_one_or_none()
+async def get_user_subscription(user_id: str) -> Subscription | None:
+    return await Subscription.find_one(Subscription.user_id == user_id)
 
 
 async def require_active_subscription(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Require an active subscription to access the endpoint."""
-    subscription = await get_user_subscription(db, current_user.id)
+    subscription = await get_user_subscription(current_user.id)
 
     if not subscription:
         raise HTTPException(
@@ -49,21 +37,10 @@ async def require_active_subscription(
 
 
 def require_subscription(feature: str):
-    """
-    Dependency factory that checks if a user's subscription tier has access to a specific feature.
-
-    Usage:
-        @router.get("/advanced-analytics")
-        async def get_advanced_analytics(
-            current_user: User = Depends(require_subscription("advanced_analytics")),
-            ...
-        ):
-    """
     async def check_subscription(
         current_user: User = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db),
     ) -> User:
-        subscription = await get_user_subscription(db, current_user.id)
+        subscription = await get_user_subscription(current_user.id)
 
         if not subscription:
             raise HTTPException(
@@ -84,7 +61,6 @@ def require_subscription(feature: str):
             )
 
         if not tier_has_feature(subscription.tier, feature):
-            # Determine the minimum tier needed
             min_tier = None
             for tier in [SubscriptionTier.basic, SubscriptionTier.pro, SubscriptionTier.premium]:
                 if tier_has_feature(tier, feature):
@@ -102,12 +78,26 @@ def require_subscription(feature: str):
     return check_subscription
 
 
-# Feature constants for easy reference
 class Features:
+    # Free tier
+    NEWS_FEED = "news_feed"
+    BASIC_SCREENER = "basic_screener"
+    HEALTH_CARDS = "health_cards"
+    # Pro tier
+    FULL_SCREENER = "full_screener"
     PORTFOLIO_TRACKING = "portfolio_tracking"
     BASIC_RECOMMENDATIONS = "basic_recommendations"
     BASIC_ANALYTICS = "basic_analytics"
     MARKET_SUMMARIES = "market_summaries"
+    PORTFOLIO_BUILDER = "portfolio_builder"
+    BEHAVIOUR_TOOLS = "behaviour_tools"
+    EARNINGS_DECODER = "earnings_decoder"
+    NGX_MODULE = "ngx_module"
+    # Premium tier
+    DCF_MODELS = "dcf_models"
+    MACRO_DASHBOARD = "macro_dashboard"
+    FULL_PORTFOLIO_ANALYTICS = "full_portfolio_analytics"
+    PRIORITY_ALERTS = "priority_alerts"
     ADVANCED_ANALYTICS = "advanced_analytics"
     TAX_OPTIMIZATION = "tax_optimization"
     DOWNLOADABLE_REPORTS = "downloadable_reports"

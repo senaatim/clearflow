@@ -60,19 +60,25 @@ export function PricingCard({
 
       <div className="text-center mb-6">
         <div className="flex items-baseline justify-center gap-1">
-          <span className="text-4xl md:text-5xl font-bold text-text-primary">
-            ₦{monthlyEquivalent.toFixed(2)}
-          </span>
-          <span className="text-text-muted">/mo</span>
+          {monthlyEquivalent === 0 ? (
+            <span className="text-4xl md:text-5xl font-bold text-text-primary">Free</span>
+          ) : (
+            <>
+              <span className="text-4xl md:text-5xl font-bold text-text-primary">
+                ₦{monthlyEquivalent.toLocaleString('en-NG')}
+              </span>
+              <span className="text-text-muted">/mo</span>
+            </>
+          )}
         </div>
-        {billingPeriod === 'yearly' && (
+        {billingPeriod === 'yearly' && price > 0 && (
           <div className="mt-2 space-y-1">
             <p className="text-sm text-text-secondary">
-              Billed ₦{price.toFixed(2)} yearly
+              Billed ₦{price.toLocaleString('en-NG')} yearly
             </p>
             {savings > 0 && (
               <p className="text-sm text-success font-medium">
-                Save ₦{savings.toFixed(2)} ({savingsPercent}% off)
+                Save ₦{savings.toLocaleString('en-NG')} ({savingsPercent}% off)
               </p>
             )}
           </div>

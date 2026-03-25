@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isPending, setIsPending] = useState(false);
   const router = useRouter();
   const { login } = useAuthStore();
 
@@ -38,6 +39,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError('');
+    setIsPending(false);
 
     try {
       const response = await authApi.login(data);
@@ -54,8 +56,13 @@ export default function LoginPage() {
       } else {
         router.push('/dashboard');
       }
-    } catch (err) {
-      setError(handleApiError(err));
+    } catch (err: any) {
+      const msg = handleApiError(err);
+      if (msg.toLowerCase().includes('pending review')) {
+        setIsPending(true);
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +85,15 @@ export default function LoginPage() {
       {/* Login Form */}
       <Card className="p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {isPending && (
+            <div className="p-4 rounded-lg bg-warning/10 border border-warning/30 text-warning text-sm space-y-1">
+              <p className="font-semibold">Account Under Review</p>
+              <p className="text-text-secondary text-xs">
+                Your registration is being reviewed by our team. You will receive access once an admin approves your account.
+              </p>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 rounded-lg bg-accent-danger/10 border border-accent-danger/30 text-accent-danger text-sm">
               {error}

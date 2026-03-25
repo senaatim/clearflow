@@ -1,20 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from datetime import datetime
 from typing import Optional
+from datetime import datetime
 
-from app.database import get_db
 from app.models.user import User
 from app.models.portfolio import Portfolio
 from app.models.recommendation import Recommendation
 from app.models.trade_request import TradeRequest, TradeRequestStatus, TradeAction, OrderType
 from app.schemas.trade_request import (
-    TradeRequestCreate,
-    TradeRequestUpdate,
-    TradeRequestResponse,
-    TradeRequestListResponse,
-    BrokerExecutionRequest,
+    TradeRequestCreate, TradeRequestUpdate, TradeRequestResponse,
+    TradeRequestListResponse, BrokerExecutionRequest,
 )
 from app.api.deps import get_current_user, get_current_broker
 from app.middleware.subscription import require_subscription, get_user_subscription, Features
@@ -22,7 +16,6 @@ from app.models.subscription import SubscriptionStatus, tier_has_feature
 
 router = APIRouter()
 
-# ── User-facing routes ────────────────────────────────────────────────────────
 
 @router.get("", response_model=TradeRequestListResponse)
 async def list_trade_requests(
@@ -30,39 +23,34 @@ async def list_trade_requests(
     limit: int = 50,
     offset: int = 0,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
-    """List all trade requests for the current user."""
-    subscription = await get_user_subscription(db, current_user.id)
+    subscription = await get_user_subscription(current_user.id)
     if (
         not subscription
         or subscription.status != SubscriptionStatus.active
         or not tier_has_feature(subscription.tier, Features.BROKER_EXECUTION)
     ):
-        return TradeRequestListResponse(
-            trades=[],
-            total_count=0,
-            pending_count=0,
-            executed_count=0,
+        return TradeRequestListResponse(trades=[], total_count=0, pending_count=0, executed_count=0)
+
+    base_query = TradeRequest.find(TradeRequest.user_id == current_user.id)
+    total_count = await base_query.count()
+    pending_count = await TradeRequest.find(
+        TradeRequest.user_id == current_user.id,
+        TradeRequest.status == TradeRequestStatus.pending,
+    ).count()
+    executed_count = await TradeRequest.find(
+        TradeRequest.user_id == current_user.id,
+        TradeRequest.status == TradeRequestStatus.executed,
+    ).count()
+
+    query = base_query
+    if status_filter:
+        query = TradeRequest.find(
+            TradeRequest.user_id == current_user.id,
+            TradeRequest.status == status_filter,
         )
 
-    query = select(TradeRequest).where(TradeRequest.user_id == current_user.id)
-    if status_filter:
-        query = query.where(TradeRequest.status == status_filter)
-
-    count_query = select(func.count(TradeRequest.id)).where(TradeRequest.user_id == current_user.id)
-    total_count = (await db.execute(count_query)).scalar() or 0
-    pending_count = (await db.execute(
-        count_query.where(TradeRequest.status == TradeRequestStatus.pending)
-    )).scalar() or 0
-    executed_count = (await db.execute(
-        count_query.where(TradeRequest.status == TradeRequestStatus.executed)
-    )).scalar() or 0
-
-    result = await db.execute(
-        query.order_by(TradeRequest.created_at.desc()).offset(offset).limit(limit)
-    )
-    trades = result.scalars().all()
+    trades = await query.sort(-TradeRequest.created_at).skip(offset).limit(limit).to_list()
 
     return TradeRequestListResponse(
         trades=[TradeRequestResponse.model_validate(t) for t in trades],
@@ -76,53 +64,28 @@ async def list_trade_requests(
 async def create_trade_request(
     trade_data: TradeRequestCreate,
     current_user: User = Depends(require_subscription(Features.BROKER_EXECUTION)),
-    db: AsyncSession = Depends(get_db),
 ):
-    """Create a new trade request."""
-    # Validate financial inputs
     if trade_data.quantity <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Quantity must be greater than zero",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quantity must be greater than zero")
     if trade_data.estimated_price is not None and trade_data.estimated_price <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Estimated price must be greater than zero",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Estimated price must be greater than zero")
     if trade_data.limit_price is not None and trade_data.limit_price <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit price must be greater than zero",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Limit price must be greater than zero")
 
-    # Verify portfolio belongs to the requesting user
-    result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == trade_data.portfolio_id,
-            Portfolio.user_id == current_user.id,
-        )
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == trade_data.portfolio_id,
+        Portfolio.user_id == current_user.id,
     )
-    portfolio = result.scalar_one_or_none()
     if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    # Verify recommendation belongs to the requesting user if provided
     if trade_data.recommendation_id:
-        result = await db.execute(
-            select(Recommendation).where(
-                Recommendation.id == trade_data.recommendation_id,
-                Recommendation.user_id == current_user.id,
-            )
+        rec = await Recommendation.find_one(
+            Recommendation.id == trade_data.recommendation_id,
+            Recommendation.user_id == current_user.id,
         )
-        if not result.scalar_one_or_none():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Recommendation not found",
-            )
+        if not rec:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recommendation not found")
 
     estimated_total = None
     if trade_data.estimated_price:
@@ -146,10 +109,7 @@ async def create_trade_request(
         user_notes=trade_data.user_notes,
         status=TradeRequestStatus.pending,
     )
-
-    db.add(trade_request)
-    await db.commit()
-    await db.refresh(trade_request)
+    await trade_request.insert()
 
     return TradeRequestResponse.model_validate(trade_request)
 
@@ -158,46 +118,25 @@ async def create_trade_request(
 async def request_broker_execution(
     request_data: BrokerExecutionRequest,
     current_user: User = Depends(require_subscription(Features.BROKER_EXECUTION)),
-    db: AsyncSession = Depends(get_db),
 ):
-    """Request broker execution based on a recommendation."""
     if request_data.quantity <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Quantity must be greater than zero",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quantity must be greater than zero")
 
-    result = await db.execute(
-        select(Recommendation).where(
-            Recommendation.id == request_data.recommendation_id,
-            Recommendation.user_id == current_user.id,
-        )
+    recommendation = await Recommendation.find_one(
+        Recommendation.id == request_data.recommendation_id,
+        Recommendation.user_id == current_user.id,
     )
-    recommendation = result.scalar_one_or_none()
     if not recommendation:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Recommendation not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recommendation not found")
 
-    result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == request_data.portfolio_id,
-            Portfolio.user_id == current_user.id,
-        )
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == request_data.portfolio_id,
+        Portfolio.user_id == current_user.id,
     )
-    portfolio = result.scalar_one_or_none()
     if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    action_map = {
-        "buy": TradeAction.buy,
-        "sell": TradeAction.sell,
-        "rebalance": TradeAction.rebalance,
-    }
+    action_map = {"buy": TradeAction.buy, "sell": TradeAction.sell, "rebalance": TradeAction.rebalance}
     action = action_map.get(recommendation.type.value, TradeAction.buy)
 
     details = recommendation.details or {}
@@ -229,13 +168,11 @@ async def request_broker_execution(
         user_notes=request_data.user_notes,
         status=TradeRequestStatus.pending,
     )
+    await trade_request.insert()
 
-    db.add(trade_request)
     recommendation.status = "accepted"
     recommendation.acted_at = datetime.utcnow()
-
-    await db.commit()
-    await db.refresh(trade_request)
+    await recommendation.save()
 
     return TradeRequestResponse.model_validate(trade_request)
 
@@ -244,16 +181,11 @@ async def request_broker_execution(
 async def get_trade_request(
     trade_id: str,
     current_user: User = Depends(require_subscription(Features.BROKER_EXECUTION)),
-    db: AsyncSession = Depends(get_db),
 ):
-    """Get a specific trade request (owner only)."""
-    result = await db.execute(
-        select(TradeRequest).where(
-            TradeRequest.id == trade_id,
-            TradeRequest.user_id == current_user.id,
-        )
+    trade = await TradeRequest.find_one(
+        TradeRequest.id == trade_id,
+        TradeRequest.user_id == current_user.id,
     )
-    trade = result.scalar_one_or_none()
     if not trade:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trade request not found")
 
@@ -264,16 +196,11 @@ async def get_trade_request(
 async def cancel_trade_request(
     trade_id: str,
     current_user: User = Depends(require_subscription(Features.BROKER_EXECUTION)),
-    db: AsyncSession = Depends(get_db),
 ):
-    """Cancel a pending trade request (owner only)."""
-    result = await db.execute(
-        select(TradeRequest).where(
-            TradeRequest.id == trade_id,
-            TradeRequest.user_id == current_user.id,
-        )
+    trade = await TradeRequest.find_one(
+        TradeRequest.id == trade_id,
+        TradeRequest.user_id == current_user.id,
     )
-    trade = result.scalar_one_or_none()
     if not trade:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trade request not found")
 
@@ -284,39 +211,30 @@ async def cancel_trade_request(
         )
 
     trade.status = TradeRequestStatus.canceled
-    await db.commit()
-    await db.refresh(trade)
+    await trade.save()
 
     return TradeRequestResponse.model_validate(trade)
 
-
-# ── Broker/Admin-only routes ──────────────────────────────────────────────────
 
 @router.patch("/{trade_id}", response_model=TradeRequestResponse)
 async def update_trade_request(
     trade_id: str,
     updates: TradeRequestUpdate,
-    current_user: User = Depends(get_current_broker),  # broker or admin ONLY
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_broker),
 ):
-    """Update a trade request. Restricted to brokers and admins."""
-    result = await db.execute(
-        select(TradeRequest).where(TradeRequest.id == trade_id)
-    )
-    trade = result.scalar_one_or_none()
+    trade = await TradeRequest.find_one(TradeRequest.id == trade_id)
     if not trade:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trade request not found")
 
     update_data = updates.model_dump(exclude_unset=True)
-
     if updates.status == TradeRequestStatus.executed:
         update_data["executed_at"] = datetime.utcnow()
 
     for field, value in update_data.items():
         setattr(trade, field, value)
 
-    await db.commit()
-    await db.refresh(trade)
+    trade.updated_at = datetime.utcnow()
+    await trade.save()
 
     return TradeRequestResponse.model_validate(trade)
 
@@ -328,31 +246,16 @@ async def confirm_trade_execution(
     executed_quantity: Optional[float] = None,
     execution_fees: float = 0.0,
     broker_notes: Optional[str] = None,
-    current_user: User = Depends(get_current_broker),  # broker or admin ONLY
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_broker),
 ):
-    """Confirm trade execution. Restricted to brokers and admins."""
-    # Validate financial inputs
     if executed_price <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Executed price must be greater than zero",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Executed price must be greater than zero")
     if executed_quantity is not None and executed_quantity <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Executed quantity must be greater than zero",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Executed quantity must be greater than zero")
     if execution_fees < 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Execution fees cannot be negative",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Execution fees cannot be negative")
 
-    result = await db.execute(
-        select(TradeRequest).where(TradeRequest.id == trade_id)
-    )
-    trade = result.scalar_one_or_none()
+    trade = await TradeRequest.find_one(TradeRequest.id == trade_id)
     if not trade:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trade request not found")
 
@@ -368,8 +271,7 @@ async def confirm_trade_execution(
     trade.execution_fees = execution_fees
     trade.broker_notes = broker_notes
     trade.executed_at = datetime.utcnow()
-
-    await db.commit()
-    await db.refresh(trade)
+    trade.updated_at = datetime.utcnow()
+    await trade.save()
 
     return TradeRequestResponse.model_validate(trade)

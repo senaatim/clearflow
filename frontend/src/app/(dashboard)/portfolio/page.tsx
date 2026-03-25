@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/utils';
 import { portfolioApi, assetApi } from '@/lib/api-client';
+import { UpgradeGate } from '@/components/ui/upgrade-gate';
 
 interface Holding {
   id: string;
@@ -73,6 +74,7 @@ export default function PortfolioPage() {
   const [portfolioName, setPortfolioName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [forbidden, setForbidden] = useState(false);
   const [sortBy, setSortBy] = useState<'value' | 'gainLoss' | 'name'>('value');
 
   // Add Position modal
@@ -97,9 +99,13 @@ export default function PortfolioPage() {
           const assets = Array.isArray(assetsRes.data) ? assetsRes.data : [];
           setHoldings(enrichAssets(assets));
         }
-      } catch (err) {
-        console.error('Failed to load portfolio:', err);
-        setError('Failed to load portfolio. Please try refreshing the page.');
+      } catch (err: any) {
+        if (err?.response?.status === 403) {
+          setForbidden(true);
+        } else {
+          console.error('Failed to load portfolio:', err);
+          setError('Failed to load portfolio. Please try refreshing the page.');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -163,6 +169,19 @@ export default function PortfolioPage() {
       // no-op — a toast notification could be added here
     }
   };
+
+  if (forbidden) {
+    return (
+      <>
+        <Header title="Portfolio" subtitle="Track and manage your investments" />
+        <UpgradeGate
+          requiredTier="pro"
+          featureName="Portfolio Tracking"
+          description="Track your holdings, performance, and allocation with ClearFlow Pro."
+        />
+      </>
+    );
+  }
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {

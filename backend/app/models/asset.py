@@ -1,9 +1,10 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import String, DateTime, ForeignKey, Float, Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.database import Base
 import enum
+from datetime import datetime
+from typing import Optional
+from beanie import Document
+from pydantic import Field
+from pymongo import IndexModel, ASCENDING
 
 
 class AssetType(str, enum.Enum):
@@ -14,27 +15,29 @@ class AssetType(str, enum.Enum):
     reit = "reit"
 
 
-class Asset(Base):
-    __tablename__ = "assets"
+class Asset(Document):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    portfolio_id: str
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    portfolio_id: Mapped[str] = mapped_column(String(36), ForeignKey("portfolios.id", ondelete="CASCADE"), nullable=False, index=True)
+    symbol: str
+    name: str
+    asset_type: AssetType
+    category: str
 
-    symbol: Mapped[str] = mapped_column(String(20), nullable=False)
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    asset_type: Mapped[AssetType] = mapped_column(SQLEnum(AssetType), nullable=False)
-    category: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g., "Technology", "Healthcare"
+    quantity: float
+    average_cost: float
+    current_price: Optional[float] = None
+    last_price_update: Optional[datetime] = None
 
-    quantity: Mapped[float] = mapped_column(Float, nullable=False)
-    average_cost: Mapped[float] = mapped_column(Float, nullable=False)
-    current_price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    last_price_update: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    portfolio: Mapped["Portfolio"] = relationship("Portfolio", back_populates="assets")
+    class Settings:
+        name = "assets"
+        indexes = [
+            IndexModel([("id", ASCENDING)], unique=True),
+            IndexModel([("portfolio_id", ASCENDING)]),
+        ]
 
     @property
     def current_value(self) -> float:

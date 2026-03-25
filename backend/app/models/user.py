@@ -1,9 +1,10 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import String, Boolean, DateTime, Text, Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.database import Base
 import enum
+from datetime import datetime
+from typing import Optional
+from beanie import Document, Indexed
+from pydantic import Field
+from pymongo import IndexModel, ASCENDING
 
 
 class UserRole(str, enum.Enum):
@@ -12,43 +13,57 @@ class UserRole(str, enum.Enum):
     admin = "admin"
 
 
+class KYCStatus(str, enum.Enum):
+    pending = "pending"
+    verified = "verified"
+    rejected = "rejected"
+
+
+class AccountStatus(str, enum.Enum):
+    pending_review = "pending_review"
+    approved = "approved"
+    rejected = "rejected"
+
+
 class RiskTolerance(str, enum.Enum):
     conservative = "conservative"
     moderate = "moderate"
     aggressive = "aggressive"
 
 
-class User(Base):
-    __tablename__ = "users"
+class User(Document):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    password_hash: str
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = None
+    risk_tolerance: RiskTolerance = RiskTolerance.moderate
+    investment_goal: Optional[str] = None
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
-    risk_tolerance: Mapped[RiskTolerance] = mapped_column(
-        SQLEnum(RiskTolerance),
-        default=RiskTolerance.moderate
-    )
-    investment_goal: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_login: Optional[datetime] = None
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # KYC fields — stored as HMAC-SHA256 hashes, never as plaintext
+    nin_hash: Optional[str] = None
+    bvn_hash: Optional[str] = None
+    kyc_status: KYCStatus = KYCStatus.pending
 
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
-    role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole), default=UserRole.user)
+    account_status: AccountStatus = AccountStatus.pending_review
+    is_active: bool = False
+    is_verified: bool = False
+    role: UserRole = UserRole.user
 
-    # Relationships
-    portfolios: Mapped[list["Portfolio"]] = relationship("Portfolio", back_populates="user", cascade="all, delete-orphan")
-    recommendations: Mapped[list["Recommendation"]] = relationship("Recommendation", back_populates="user", cascade="all, delete-orphan")
-    subscription: Mapped["Subscription"] = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
-    trade_requests: Mapped[list["TradeRequest"]] = relationship("TradeRequest", back_populates="user", cascade="all, delete-orphan")
-    fund_requests: Mapped[list["FundRequest"]] = relationship("FundRequest", back_populates="user", foreign_keys="FundRequest.user_id", cascade="all, delete-orphan")
+    class Settings:
+        name = "users"
+        indexes = [
+            IndexModel([("email", ASCENDING)], unique=True),
+            IndexModel([("id", ASCENDING)], unique=True),
+            IndexModel([("nin_hash", ASCENDING)], unique=True, sparse=True),
+            IndexModel([("bvn_hash", ASCENDING)], unique=True, sparse=True),
+        ]
 
     def __repr__(self) -> str:
         return f"<User {self.email}>"

@@ -2,7 +2,7 @@ import re
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
 from datetime import datetime
 from typing import Optional
-from app.models.user import RiskTolerance
+from app.models.user import AccountStatus, KYCStatus, RiskTolerance
 
 # Allowed characters in name fields: letters, spaces, hyphens, apostrophes
 _NAME_PATTERN = re.compile(r"^[A-Za-z\s'\-]{2,50}$")
@@ -10,6 +10,8 @@ _NAME_PATTERN = re.compile(r"^[A-Za-z\s'\-]{2,50}$")
 _PHONE_PATTERN = re.compile(r"^\+?[0-9]{7,15}$")
 # Simple HTML tag detector for injection prevention
 _HTML_PATTERN = re.compile(r"<[^>]+>")
+# NIN and BVN: exactly 11 digits
+_KYC_ID_PATTERN = re.compile(r"^\d{11}$")
 
 
 def _sanitize_name(value: str, field: str) -> str:
@@ -29,6 +31,8 @@ class UserCreate(BaseModel):
     password: str
     first_name: str
     last_name: str
+    nin: str
+    bvn: str
 
     @field_validator("email", mode="before")
     @classmethod
@@ -44,6 +48,22 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_last_name(cls, v: str) -> str:
         return _sanitize_name(v, "Last name")
+
+    @field_validator("nin", mode="before")
+    @classmethod
+    def validate_nin(cls, v: str) -> str:
+        v = v.strip()
+        if not _KYC_ID_PATTERN.match(v):
+            raise ValueError("NIN must be exactly 11 digits")
+        return v
+
+    @field_validator("bvn", mode="before")
+    @classmethod
+    def validate_bvn(cls, v: str) -> str:
+        v = v.strip()
+        if not _KYC_ID_PATTERN.match(v):
+            raise ValueError("BVN must be exactly 11 digits")
+        return v
 
     @field_validator("password", mode="before")
     @classmethod
@@ -122,6 +142,8 @@ class UserResponse(BaseModel):
     investment_goal: Optional[str] = None
     created_at: datetime
     is_verified: bool
+    kyc_status: KYCStatus = KYCStatus.pending
+    account_status: AccountStatus = AccountStatus.pending_review
     role: str = "user"
 
     class Config:

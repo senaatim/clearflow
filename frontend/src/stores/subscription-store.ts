@@ -2,29 +2,44 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SubscriptionTier, SubscriptionStatus, SubscriptionWithFeatures } from '@/types';
 
-// Feature definitions by tier
+// Feature definitions by tier — must stay in sync with backend TIER_FEATURES
 export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
   basic: [
-    'portfolio_tracking',
-    'basic_recommendations',
-    'basic_analytics',
-    'market_summaries',
+    'news_feed',
+    'basic_screener',
+    'health_cards',
   ],
   pro: [
+    'news_feed',
+    'basic_screener',
+    'health_cards',
+    'full_screener',
     'portfolio_tracking',
     'basic_recommendations',
     'basic_analytics',
     'market_summaries',
-    'advanced_analytics',
-    'tax_optimization',
-    'downloadable_reports',
-    'weekly_digest',
+    'portfolio_builder',
+    'behaviour_tools',
+    'earnings_decoder',
+    'ngx_module',
   ],
   premium: [
+    'news_feed',
+    'basic_screener',
+    'health_cards',
+    'full_screener',
     'portfolio_tracking',
     'basic_recommendations',
     'basic_analytics',
     'market_summaries',
+    'portfolio_builder',
+    'behaviour_tools',
+    'earnings_decoder',
+    'ngx_module',
+    'dcf_models',
+    'macro_dashboard',
+    'full_portfolio_analytics',
+    'priority_alerts',
     'advanced_analytics',
     'tax_optimization',
     'downloadable_reports',
@@ -34,6 +49,12 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
     'api_access',
     'priority_support',
   ],
+};
+
+export const TIER_DISPLAY_NAMES: Record<SubscriptionTier, string> = {
+  basic: 'Free',
+  pro: 'ClearFlow Pro',
+  premium: 'ClearFlow Premium',
 };
 
 interface SubscriptionState {
@@ -110,25 +131,30 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       canAccess: (feature) => {
         const { tier, status, subscription } = get();
 
-        // No subscription = no access
-        if (!tier || !status || !subscription) return false;
+        // No subscription — treat as free tier for free features
+        if (!tier || !status || !subscription) {
+          return TIER_FEATURES['basic'].includes(feature);
+        }
 
-        // Not active = no access
-        if (status !== 'active') return false;
+        // Not active = fall back to free tier features
+        if (status !== 'active') {
+          return TIER_FEATURES['basic'].includes(feature);
+        }
 
-        // Check expiration
+        // Check expiration — fall back to free tier
         const endDate = new Date(subscription.currentPeriodEnd);
-        if (endDate <= new Date()) return false;
+        if (endDate <= new Date()) {
+          return TIER_FEATURES['basic'].includes(feature);
+        }
 
-        // Check feature access
         const tierFeatures = TIER_FEATURES[tier] || [];
         return tierFeatures.includes(feature);
       },
 
       getTierName: () => {
         const { tier } = get();
-        if (!tier) return 'None';
-        return tier.charAt(0).toUpperCase() + tier.slice(1);
+        if (!tier) return 'Free';
+        return TIER_DISPLAY_NAMES[tier] ?? tier;
       },
     }),
     {
@@ -143,12 +169,27 @@ export const useSubscriptionStore = create<SubscriptionState>()(
   )
 );
 
-// Feature constants for easy reference
+// Feature constants for easy reference — must match backend Features class
 export const Features = {
+  // Free tier
+  NEWS_FEED: 'news_feed',
+  BASIC_SCREENER: 'basic_screener',
+  HEALTH_CARDS: 'health_cards',
+  // Pro tier
+  FULL_SCREENER: 'full_screener',
   PORTFOLIO_TRACKING: 'portfolio_tracking',
   BASIC_RECOMMENDATIONS: 'basic_recommendations',
   BASIC_ANALYTICS: 'basic_analytics',
   MARKET_SUMMARIES: 'market_summaries',
+  PORTFOLIO_BUILDER: 'portfolio_builder',
+  BEHAVIOUR_TOOLS: 'behaviour_tools',
+  EARNINGS_DECODER: 'earnings_decoder',
+  NGX_MODULE: 'ngx_module',
+  // Premium tier
+  DCF_MODELS: 'dcf_models',
+  MACRO_DASHBOARD: 'macro_dashboard',
+  FULL_PORTFOLIO_ANALYTICS: 'full_portfolio_analytics',
+  PRIORITY_ALERTS: 'priority_alerts',
   ADVANCED_ANALYTICS: 'advanced_analytics',
   TAX_OPTIMIZATION: 'tax_optimization',
   DOWNLOADABLE_REPORTS: 'downloadable_reports',

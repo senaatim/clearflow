@@ -9,6 +9,7 @@ import { BrokerExecutionModal } from '@/components/dashboard/broker-execution-mo
 import { InvestmentDisclaimer } from '@/components/ui/disclaimer';
 import { useSubscriptionStore, Features } from '@/stores/subscription-store';
 import { recommendationApi, portfolioApi, tradeApi } from '@/lib/api-client';
+import { UpgradeGate } from '@/components/ui/upgrade-gate';
 import { formatCurrency, formatRelativeTime } from '@/lib/utils';
 import type { Recommendation, Portfolio } from '@/types';
 
@@ -98,6 +99,19 @@ export default function RecommendationsPage() {
       userNotes: data.userNotes,
     });
   };
+
+  if (!canAccess(Features.BASIC_RECOMMENDATIONS)) {
+    return (
+      <>
+        <Header title="AI Recommendations" subtitle="Personalised investment recommendations" />
+        <UpgradeGate
+          requiredTier="pro"
+          featureName="AI Recommendations"
+          description="Get personalised buy, sell, and rebalance recommendations tailored to your portfolio with ClearFlow Pro."
+        />
+      </>
+    );
+  }
 
   if (isLoading) {
     return (

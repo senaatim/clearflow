@@ -1,9 +1,10 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import String, DateTime, Float, ForeignKey, Text, Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.database import Base
 import enum
+from datetime import datetime
+from typing import Optional
+from beanie import Document
+from pydantic import Field
+from pymongo import IndexModel, ASCENDING
 
 
 class TradeAction(str, enum.Enum):
@@ -36,50 +37,44 @@ class GrowthOutlook(str, enum.Enum):
     long_term = "long_term"
 
 
-class TradeRequest(Base):
-    __tablename__ = "trade_requests"
+class TradeRequest(Document):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    recommendation_id: Optional[str] = None
+    portfolio_id: str
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    recommendation_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("recommendations.id", ondelete="SET NULL"), nullable=True)
-    portfolio_id: Mapped[str] = mapped_column(String(36), ForeignKey("portfolios.id", ondelete="CASCADE"), nullable=False)
+    action: TradeAction
+    symbol: str
+    company_name: Optional[str] = None
+    quantity: float
+    order_type: OrderType = OrderType.market
+    limit_price: Optional[float] = None
+    estimated_price: Optional[float] = None
+    estimated_total: Optional[float] = None
 
-    # Trade details
-    action: Mapped[TradeAction] = mapped_column(SQLEnum(TradeAction), nullable=False)
-    symbol: Mapped[str] = mapped_column(String(20), nullable=False)
-    company_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    quantity: Mapped[float] = mapped_column(Float, nullable=False)
-    order_type: Mapped[OrderType] = mapped_column(SQLEnum(OrderType), default=OrderType.market)
-    limit_price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    estimated_price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    estimated_total: Mapped[float | None] = mapped_column(Float, nullable=True)
+    risk_level: Optional[RiskLevel] = None
+    growth_outlook: Optional[GrowthOutlook] = None
+    ai_reasoning: Optional[str] = None
 
-    # Risk and analysis
-    risk_level: Mapped[RiskLevel | None] = mapped_column(SQLEnum(RiskLevel), nullable=True)
-    growth_outlook: Mapped[GrowthOutlook | None] = mapped_column(SQLEnum(GrowthOutlook), nullable=True)
-    ai_reasoning: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: TradeRequestStatus = TradeRequestStatus.pending
+    broker_notes: Optional[str] = None
 
-    # Status tracking
-    status: Mapped[TradeRequestStatus] = mapped_column(SQLEnum(TradeRequestStatus), default=TradeRequestStatus.pending)
-    broker_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    executed_price: Optional[float] = None
+    executed_quantity: Optional[float] = None
+    execution_fees: Optional[float] = None
+    executed_at: Optional[datetime] = None
 
-    # Execution details
-    executed_price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    executed_quantity: Mapped[float | None] = mapped_column(Float, nullable=True)
-    execution_fees: Mapped[float | None] = mapped_column(Float, nullable=True)
-    executed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    user_notes: Optional[str] = None
 
-    # User notes
-    user_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="trade_requests")
-    recommendation: Mapped["Recommendation"] = relationship("Recommendation", back_populates="trade_requests")
-    portfolio: Mapped["Portfolio"] = relationship("Portfolio", back_populates="trade_requests")
+    class Settings:
+        name = "trade_requests"
+        indexes = [
+            IndexModel([("id", ASCENDING)], unique=True),
+            IndexModel([("user_id", ASCENDING)]),
+        ]
 
     def __repr__(self) -> str:
         return f"<TradeRequest {self.action.value} {self.quantity} {self.symbol} - {self.status.value}>"

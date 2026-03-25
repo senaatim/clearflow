@@ -1,5 +1,5 @@
 """
-AI Advisor Service - Uses Google Gemini to generate intelligent stock recommendations
+AI Advisor Service - Uses Groq Cloud to generate intelligent stock recommendations
 """
 import os
 import json
@@ -17,77 +17,58 @@ except ImportError:
     pass
 
 try:
-    import google.generativeai as genai
+    from groq import Groq as groq_sdk
 except ImportError:
-    genai = None
+    groq_sdk = None
 from app.config import settings
 from app.services.market_data import MarketDataService, POPULAR_STOCKS
 
 
 class AIAdvisorService:
-    """AI-powered investment advisor using Google Gemini."""
+    """AI-powered investment advisor using Groq Cloud."""
 
     def __init__(self, api_key: Optional[str] = None):
         # Try all sources: passed arg → pydantic settings → raw OS env
-        self.api_key = api_key or settings.gemini_api_key or os.getenv("GEMINI_API_KEY", "")
+        self.api_key = api_key or settings.groq_api_key or os.getenv("GROQ_API_KEY", "")
         print(f"[AI] API key loaded: {'YES (len=' + str(len(self.api_key)) + ')' if self.api_key else 'NO'}")
-        self.model = None
-        if self.api_key and genai:
+        self.client = None
+        if self.api_key and groq_sdk:
             try:
-                genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-2.0-flash')
-                print(f"[AI] Gemini initialized (primary: gemini-2.0-flash)")
+                self.client = groq_sdk(api_key=self.api_key)
+                print(f"[AI] Groq initialized (primary: llama-3.3-70b-versatile)")
             except Exception as e:
-                print(f"[AI] Failed to initialize Gemini client: {e}")
+                print(f"[AI] Failed to initialize Groq client: {e}")
         else:
-            print(f"[AI] Running in mock mode (no API key or genai not installed)")
+            print(f"[AI] Running in mock mode (no API key or groq not installed)")
         self.market_service = MarketDataService()
 
-    # Models tried in order — falls to next on 429/404
+    # Models tried in order — falls to next on rate-limit
     _MODELS = [
-        'gemini-2.0-flash',       # Primary — Gemini 2.0 Flash
-        'gemini-2.0-flash-lite',  # Fallback — lighter 2.0 model, more free quota
-        'gemini-1.5-flash',       # Last resort free-tier fallback
+        'llama-3.3-70b-versatile',  # Primary — fast & capable
+        'llama-3.1-8b-instant',     # Fallback — ultra-fast, lighter
     ]
 
-    def _call_gemini(self, messages: list, max_tokens: int = 1000) -> str:
-        """Make a call to Gemini API, trying free-tier models in order."""
-        if not self.api_key or not genai:
+    def _call_groq(self, messages: list, max_tokens: int = 1000) -> str:
+        """Make a call to Groq API, trying models in order."""
+        if not self.api_key or not groq_sdk or not self.client:
             return self._get_mock_response(messages)
-
-        genai.configure(api_key=self.api_key)
-
-        system_prompt = ""
-        user_parts = []
-        for msg in messages:
-            if msg["role"] == "system":
-                system_prompt = msg["content"]
-            elif msg["role"] == "user":
-                user_parts.append(msg["content"])
-        user_prompt = "\n\n".join(user_parts)
 
         last_error = None
         for model_name in self._MODELS:
             try:
-                model = genai.GenerativeModel(
-                    model_name,
-                    system_instruction=system_prompt if system_prompt else None,
-                )
-                response = model.generate_content(
-                    user_prompt,
-                    generation_config=genai.types.GenerationConfig(
-                        max_output_tokens=max_tokens,
-                        temperature=0.7,
-                    )
+                response = self.client.chat.completions.create(
+                    model=model_name,
+                    messages=messages,
+                    max_tokens=max_tokens,
                 )
                 print(f"[AI] Response from {model_name}")
-                return response.text
+                return response.choices[0].message.content
             except Exception as e:
                 err_str = str(e)
                 print(f"[AI] {model_name} error: {err_str[:120]}")
                 last_error = e
-                # Only retry on quota/not-found errors; stop on auth errors
-                if "429" in err_str or "404" in err_str:
+                # Only retry on rate-limit / overload errors
+                if "429" in err_str or "rate_limit" in err_str.lower() or "overloaded" in err_str.lower():
                     continue
                 break
 
@@ -410,7 +391,7 @@ Provide your analysis in JSON format with these fields:
             {"role": "user", "content": prompt}
         ]
 
-        response = self._call_gemini(messages, max_tokens=800)
+        response = self._call_groq(messages, max_tokens=800)
 
         try:
             # Try to parse JSON from response
@@ -557,7 +538,7 @@ Provide your analysis in JSON format with these fields:
             {"role": "user", "content": prompt}
         ]
 
-        response = self._call_gemini(messages, max_tokens=1000)
+        response = self._call_groq(messages, max_tokens=1000)
 
         try:
             ai_analysis = json.loads(response)
@@ -615,7 +596,7 @@ Provide your analysis in JSON format with these fields:
             {"role": "user", "content": prompt}
         ]
 
-        response = self._call_gemini(messages, max_tokens=800)
+        response = self._call_groq(messages, max_tokens=800)
 
         try:
             ai_insights = json.loads(response)
@@ -635,7 +616,7 @@ Provide your analysis in JSON format with these fields:
         }
 
     def summarize_news(self, articles: list[dict]) -> dict:
-        """Use Gemini to summarize and analyze financial news articles."""
+        """Use Claude to summarize and analyze financial news articles."""
         if not articles:
             return {
                 "summary": "No recent news articles available.",
@@ -672,7 +653,7 @@ Provide your analysis in JSON format with these fields:
             {"role": "user", "content": prompt}
         ]
 
-        response = self._call_gemini(messages, max_tokens=600)
+        response = self._call_groq(messages, max_tokens=600)
 
         try:
             return json.loads(response)
@@ -696,7 +677,7 @@ Provide your analysis in JSON format with these fields:
             {
                 "role": "system",
                 "content": (
-                    "You are ClearFlow AI, an intelligent investment advisor powered by Google Gemini. "
+                    "You are ClearFlow AI, an intelligent investment advisor powered by Groq. "
                     "You have deep knowledge of finance, investing, stock markets, economics, and financial planning.\n\n"
                     "Guidelines:\n"
                     "- Answer questions thoroughly and conversationally, like a knowledgeable financial expert\n"
@@ -711,7 +692,7 @@ Provide your analysis in JSON format with these fields:
             {"role": "user", "content": prompt}
         ]
 
-        return self._call_gemini(messages, max_tokens=1200)
+        return self._call_groq(messages, max_tokens=1200)
 
 
 # Singleton instance

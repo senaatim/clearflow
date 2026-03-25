@@ -1,9 +1,10 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import String, Boolean, DateTime, Text, ForeignKey, Float, JSON, Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.database import Base
 import enum
+from datetime import datetime
+from typing import Optional
+from beanie import Document
+from pydantic import Field
+from pymongo import IndexModel, ASCENDING
 
 
 class PortfolioType(str, enum.Enum):
@@ -12,29 +13,28 @@ class PortfolioType(str, enum.Enum):
     savings = "savings"
 
 
-class Portfolio(Base):
-    __tablename__ = "portfolios"
+class Portfolio(Document):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: str
+    description: Optional[str] = None
+    type: PortfolioType = PortfolioType.investment
+    currency: str = "USD"
 
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    type: Mapped[PortfolioType] = mapped_column(SQLEnum(PortfolioType), default=PortfolioType.investment)
-    currency: Mapped[str] = mapped_column(String(3), default="USD")
+    target_allocation: Optional[dict] = None
+    auto_rebalance: bool = False
+    rebalance_threshold: float = 5.0
 
-    target_allocation: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    auto_rebalance: Mapped[bool] = mapped_column(Boolean, default=False)
-    rebalance_threshold: Mapped[float] = mapped_column(Float, default=5.0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="portfolios")
-    assets: Mapped[list["Asset"]] = relationship("Asset", back_populates="portfolio", cascade="all, delete-orphan")
-    transactions: Mapped[list["Transaction"]] = relationship("Transaction", back_populates="portfolio", cascade="all, delete-orphan")
-    trade_requests: Mapped[list["TradeRequest"]] = relationship("TradeRequest", back_populates="portfolio", cascade="all, delete-orphan")
+    class Settings:
+        name = "portfolios"
+        indexes = [
+            IndexModel([("id", ASCENDING)], unique=True),
+            IndexModel([("user_id", ASCENDING)]),
+        ]
 
     def __repr__(self) -> str:
         return f"<Portfolio {self.name}>"

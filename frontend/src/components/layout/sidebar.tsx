@@ -22,6 +22,11 @@ import {
   Briefcase,
   CreditCard,
   Sparkles,
+  Newspaper,
+  SlidersHorizontal,
+  HeartPulse,
+  TrendingUp,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
@@ -31,8 +36,8 @@ import { Features } from '@/stores/subscription-store';
 
 const mainNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/portfolio', label: 'Portfolio', icon: PieChart },
-  { href: '/analytics', label: 'Analytics', icon: LineChart },
+  { href: '/portfolio', label: 'Portfolio', icon: PieChart, requireFeature: Features.PORTFOLIO_TRACKING },
+  { href: '/analytics', label: 'Analytics', icon: LineChart, requireFeature: Features.BASIC_ANALYTICS },
 ];
 
 const tradingNavItems = [
@@ -41,11 +46,18 @@ const tradingNavItems = [
   { href: '/add-funds', label: 'Add Funds', icon: PlusCircle },
 ];
 
+const marketsNavItems = [
+  { href: '/news', label: 'News Feed', icon: Newspaper },
+  { href: '/screener', label: 'Stock Screener', icon: SlidersHorizontal },
+  { href: '/health-cards', label: 'Health Cards', icon: HeartPulse },
+  { href: '/ngx', label: 'NGX Module', icon: TrendingUp, requireFeature: Features.NGX_MODULE },
+];
+
 const insightsNavItems = [
-  { href: '/ai-advisor', label: 'AI Advisor', icon: Sparkles },
-  { href: '/recommendations', label: 'AI Recommendations', icon: Brain },
-  { href: '/risk-management', label: 'Risk Management', icon: Shield },
-  { href: '/tax-optimization', label: 'Tax Optimization', icon: Calculator },
+  { href: '/ai-advisor', label: 'AI Advisor', icon: Sparkles, requireFeature: Features.ROBO_ADVISOR },
+  { href: '/recommendations', label: 'AI Recommendations', icon: Brain, requireFeature: Features.BASIC_RECOMMENDATIONS },
+  { href: '/risk-management', label: 'Risk Management', icon: Shield, requireFeature: Features.ADVANCED_ANALYTICS },
+  { href: '/tax-optimization', label: 'Tax Optimization', icon: Calculator, requireFeature: Features.TAX_OPTIMIZATION },
   { href: '/reports', label: 'Reports', icon: FileText },
   { href: '/automation', label: 'Automation', icon: Bot },
 ];
@@ -81,10 +93,22 @@ function NavSection({ label, items, onItemClick }: NavSectionProps) {
       {items.map((item) => {
         const Icon = item.icon;
         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+        const isLocked = !!(item.requireFeature && !canAccess(item.requireFeature));
 
-        // Skip items that require features the user doesn't have
-        if (item.requireFeature && !canAccess(item.requireFeature)) {
-          return null;
+        if (isLocked) {
+          return (
+            <Link
+              key={item.href}
+              href="/subscription"
+              onClick={onItemClick}
+              className="nav-item opacity-50"
+              title="Upgrade to unlock"
+            >
+              <Icon className="w-5 h-5 opacity-70" />
+              <span className="flex-1">{item.label}</span>
+              <Lock className="w-3.5 h-3.5 opacity-60" />
+            </Link>
+          );
         }
 
         return (
@@ -201,6 +225,7 @@ export function Sidebar() {
         {/* Navigation */}
         <nav>
           <NavSection label="Main" items={mainNavItems} onItemClick={handleNavClick} />
+          <NavSection label="Markets" items={marketsNavItems} onItemClick={handleNavClick} />
           <NavSection label="Trading" items={tradingNavItems} onItemClick={handleNavClick} />
           <NavSection label="Insights" items={insightsNavItems} onItemClick={handleNavClick} />
           <NavSection label="Account" items={accountNavItems} onItemClick={handleNavClick} />

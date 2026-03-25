@@ -4,11 +4,26 @@ import { useState } from 'react';
 import { Sparkles, TrendingUp, MessageSquare, BarChart3, Newspaper } from 'lucide-react';
 import { StockAnalysisCard, AIChat, MarketInsights, FinancialNews } from '@/components/ai';
 import { Disclaimer } from '@/components/ui/disclaimer';
+import { UpgradeGate } from '@/components/ui/upgrade-gate';
+import { useSubscriptionStore, Features } from '@/stores/subscription-store';
 
 type TabType = 'insights' | 'news' | 'analyze' | 'chat';
 
 export default function AIAdvisorPage() {
   const [activeTab, setActiveTab] = useState<TabType>('insights');
+  const { canAccess } = useSubscriptionStore();
+
+  if (!canAccess(Features.ROBO_ADVISOR)) {
+    return (
+      <div className="p-6">
+        <UpgradeGate
+          requiredTier="premium"
+          featureName="AI Investment Advisor"
+          description="Get AI-powered stock analysis, portfolio insights, and answers to your investment questions with ClearFlow Premium."
+        />
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'insights' as const, label: 'Market Insights', icon: BarChart3 },
@@ -27,7 +42,7 @@ export default function AIAdvisorPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">AI Investment Advisor</h1>
-            <p className="text-gray-400">Powered by Google Gemini AI</p>
+            <p className="text-gray-400">Powered by Claude AI</p>
           </div>
         </div>
       </div>

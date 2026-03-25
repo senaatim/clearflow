@@ -1,9 +1,10 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import String, DateTime, ForeignKey, Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.database import Base
 import enum
+from datetime import datetime
+from typing import Optional
+from beanie import Document
+from pydantic import Field
+from pymongo import IndexModel, ASCENDING
 
 
 class SubscriptionTier(str, enum.Enum):
@@ -20,34 +21,31 @@ class SubscriptionStatus(str, enum.Enum):
     pending = "pending"
 
 
-class Subscription(Base):
-    __tablename__ = "subscriptions"
+class Subscription(Document):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    tier: SubscriptionTier = SubscriptionTier.basic
+    status: SubscriptionStatus = SubscriptionStatus.pending
 
-    tier: Mapped[SubscriptionTier] = mapped_column(SQLEnum(SubscriptionTier), nullable=False, default=SubscriptionTier.basic)
-    status: Mapped[SubscriptionStatus] = mapped_column(SQLEnum(SubscriptionStatus), nullable=False, default=SubscriptionStatus.pending)
+    stripe_customer_id: Optional[str] = None
+    stripe_subscription_id: Optional[str] = None
 
-    # Mock Stripe fields (for future integration)
-    stripe_customer_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    stripe_subscription_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    current_period_start: datetime = Field(default_factory=datetime.utcnow)
+    current_period_end: datetime
 
-    # Billing period
-    current_period_start: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
-    current_period_end: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    canceled_at: Optional[datetime] = None
+    cancel_at_period_end: bool = False
 
-    # Cancellation
-    canceled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    cancel_at_period_end: Mapped[bool] = mapped_column(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="subscription")
-    payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="subscription", cascade="all, delete-orphan")
+    class Settings:
+        name = "subscriptions"
+        indexes = [
+            IndexModel([("id", ASCENDING)], unique=True),
+            IndexModel([("user_id", ASCENDING)], unique=True),
+        ]
 
     def __repr__(self) -> str:
         return f"<Subscription {self.tier.value} - {self.status.value}>"
@@ -57,29 +55,43 @@ class Subscription(Base):
         return self.status == SubscriptionStatus.active and datetime.utcnow() < self.current_period_end
 
 
-# Tier feature definitions
 TIER_FEATURES = {
     SubscriptionTier.basic: [
-        "portfolio_tracking",
-        "basic_recommendations",
-        "basic_analytics",
-        "market_summaries",
+        "news_feed",
+        "basic_screener",
+        "health_cards",
     ],
     SubscriptionTier.pro: [
+        "news_feed",
+        "basic_screener",
+        "health_cards",
+        "full_screener",
         "portfolio_tracking",
         "basic_recommendations",
         "basic_analytics",
         "market_summaries",
-        "advanced_analytics",
-        "tax_optimization",
-        "downloadable_reports",
-        "weekly_digest",
+        "portfolio_builder",
+        "behaviour_tools",
+        "earnings_decoder",
+        "ngx_module",
     ],
     SubscriptionTier.premium: [
+        "news_feed",
+        "basic_screener",
+        "health_cards",
+        "full_screener",
         "portfolio_tracking",
         "basic_recommendations",
         "basic_analytics",
         "market_summaries",
+        "portfolio_builder",
+        "behaviour_tools",
+        "earnings_decoder",
+        "ngx_module",
+        "dcf_models",
+        "macro_dashboard",
+        "full_portfolio_analytics",
+        "priority_alerts",
         "advanced_analytics",
         "tax_optimization",
         "downloadable_reports",
@@ -91,30 +103,28 @@ TIER_FEATURES = {
     ],
 }
 
-
-# Tier pricing (in cents for accuracy)
+# Prices stored in kobo (1 NGN = 100 kobo)
 TIER_PRICING = {
     SubscriptionTier.basic: {
-        "monthly": 999,  # $9.99
-        "yearly": 9900,  # $99.00
-        "name": "Basic",
-        "description": "Essential tools for getting started with smart investing",
+        "monthly": 0,
+        "yearly": 0,
+        "name": "Free",
+        "description": "News feed, basic screener & Company Health Cards to get you started",
     },
     SubscriptionTier.pro: {
-        "monthly": 2999,  # $29.99
-        "yearly": 29900,  # $299.00
-        "name": "Pro",
-        "description": "Advanced analytics and tax optimization for serious investors",
+        "monthly": 1000000,   # ₦10,000
+        "yearly": 9600000,    # ₦96,000 (20% off)
+        "name": "ClearFlow Pro",
+        "description": "Full screener, Portfolio Builder, Earnings Decoder & NGX module",
     },
     SubscriptionTier.premium: {
-        "monthly": 7999,  # $79.99
-        "yearly": 79900,  # $799.00
-        "name": "Premium",
-        "description": "Full-service investment intelligence with broker execution",
+        "monthly": 2000000,   # ₦20,000
+        "yearly": 19200000,   # ₦192,000 (20% off)
+        "name": "ClearFlow Premium",
+        "description": "DCF models, Macro Dashboard, full Portfolio Analytics & priority alerts",
     },
 }
 
 
 def tier_has_feature(tier: SubscriptionTier, feature: str) -> bool:
-    """Check if a subscription tier has access to a specific feature."""
     return feature in TIER_FEATURES.get(tier, [])

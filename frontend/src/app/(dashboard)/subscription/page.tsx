@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PricingCard, PricingToggle } from '@/components/ui/pricing-card';
 import { subscriptionApi } from '@/lib/api-client';
-import { useSubscriptionStore } from '@/stores/subscription-store';
+import { useSubscriptionStore, TIER_DISPLAY_NAMES } from '@/stores/subscription-store';
 import {
   Crown,
   Sparkles,
@@ -29,6 +29,7 @@ export default function SubscriptionPage() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     loadData();
@@ -56,14 +57,15 @@ export default function SubscriptionPage() {
 
   const handleSubscribe = async (selectedTier: SubscriptionTier) => {
     setActionLoading(true);
+    setError('');
     try {
       const response = await subscriptionApi.subscribe({
         tier: selectedTier,
         billing_period: billingPeriod,
       });
       setSubscription(response.data);
-    } catch (error) {
-      console.error('Failed to subscribe:', error);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? 'Failed to subscribe. Please try again.');
     } finally {
       setActionLoading(false);
     }
@@ -71,11 +73,25 @@ export default function SubscriptionPage() {
 
   const handleUpgrade = async (selectedTier: SubscriptionTier) => {
     setActionLoading(true);
+    setError('');
     try {
       const response = await subscriptionApi.upgrade(selectedTier);
       setSubscription(response.data);
-    } catch (error) {
-      console.error('Failed to upgrade:', error);
+    } catch (err: any) {
+      // No subscription in DB yet — fall back to subscribe
+      if (err?.response?.status === 404) {
+        try {
+          const response = await subscriptionApi.subscribe({
+            tier: selectedTier,
+            billing_period: billingPeriod,
+          });
+          setSubscription(response.data);
+        } catch (subErr: any) {
+          setError(subErr?.response?.data?.detail ?? 'Failed to subscribe. Please try again.');
+        }
+      } else {
+        setError(err?.response?.data?.detail ?? 'Failed to upgrade. Please try again.');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -85,13 +101,17 @@ export default function SubscriptionPage() {
     if (!confirm('Are you sure you want to cancel your subscription? You will lose access at the end of your billing period.')) {
       return;
     }
-
     setActionLoading(true);
+    setError('');
     try {
       const response = await subscriptionApi.cancel();
       setSubscription(response.data);
-    } catch (error) {
-      console.error('Failed to cancel:', error);
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        setSubscription(null as any);
+      } else {
+        setError(err?.response?.data?.detail ?? 'Failed to cancel. Please try again.');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -99,11 +119,12 @@ export default function SubscriptionPage() {
 
   const handleReactivate = async () => {
     setActionLoading(true);
+    setError('');
     try {
       const response = await subscriptionApi.reactivate();
       setSubscription(response.data);
-    } catch (error) {
-      console.error('Failed to reactivate:', error);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? 'Failed to reactivate. Please try again.');
     } finally {
       setActionLoading(false);
     }
@@ -141,6 +162,12 @@ export default function SubscriptionPage() {
     <>
       <Header title="Subscription" subtitle="Manage your subscription and billing" />
 
+      {error && (
+        <div className="mb-6 p-3 rounded-lg bg-accent-danger/10 border border-accent-danger/30 text-accent-danger text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Current Plan */}
       {subscription && status === 'active' ? (
         <Card className="mb-8">
@@ -166,7 +193,7 @@ export default function SubscriptionPage() {
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <h2 className="text-xl font-bold text-text-primary">
-                    {tier?.charAt(0).toUpperCase()}{tier?.slice(1)} Plan
+                    {tier ? TIER_DISPLAY_NAMES[tier] : 'Free'} Plan
                   </h2>
                   <Badge variant={status === 'active' ? 'positive' : 'neutral'}>
                     {status}
@@ -264,7 +291,7 @@ export default function SubscriptionPage() {
               tier={tierInfo}
               billingPeriod={billingPeriod}
               isCurrentPlan={tier === tierInfo.tier}
-              onSelect={subscription ? handleUpgrade : handleSubscribe}
+              onSelect={status === 'active' ? handleUpgrade : handleSubscribe}
               isLoading={actionLoading}
               disabled={tier === tierInfo.tier}
             />

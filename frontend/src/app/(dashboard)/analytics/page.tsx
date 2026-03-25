@@ -19,10 +19,13 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatCard } from '@/components/ui/stat-card';
 import { analyticsApi } from '@/lib/api-client';
+import { UpgradeGate } from '@/components/ui/upgrade-gate';
+import { useSubscriptionStore, Features } from '@/stores/subscription-store';
 
 const SECTOR_COLORS = ['#00ffaa', '#00d4ff', '#00ff88', '#ffbb00', '#ff6b9d', '#a855f7', '#f97316'];
 
 export default function AnalyticsPage() {
+  const { canAccess } = useSubscriptionStore();
   const [marketTrends, setMarketTrends] = useState<Record<string, unknown>[]>([]);
   const [sectorData, setSectorData] = useState<{ name: string; value: number; change: number; color: string }[]>([]);
   const [predictions, setPredictions] = useState<Record<string, unknown>[]>([]);
@@ -59,6 +62,19 @@ export default function AnalyticsPage() {
     };
     load();
   }, []);
+
+  if (!canAccess(Features.BASIC_ANALYTICS)) {
+    return (
+      <>
+        <Header title="Analytics" subtitle="Market trends and portfolio analytics" />
+        <UpgradeGate
+          requiredTier="pro"
+          featureName="Analytics"
+          description="Access market trends, sector analysis, and performance predictions with ClearFlow Pro."
+        />
+      </>
+    );
+  }
 
   if (isLoading) {
     return (

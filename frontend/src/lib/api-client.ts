@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/auth-store';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 // --- Case conversion utilities ---
 
@@ -118,7 +118,7 @@ export function handleApiError(error: unknown): string {
 
 // Auth API
 export const authApi = {
-  register: (data: { email: string; password: string; firstName: string; lastName: string }) =>
+  register: (data: { email: string; password: string; firstName: string; lastName: string; nin: string; bvn: string }) =>
     apiClient.post('/auth/register', data),
 
   login: (data: { email: string; password: string }) =>
@@ -381,8 +381,18 @@ export const aiApi = {
     apiClient.get('/ai/search', { params: { query, limit } }),
 
   // AI Q&A
-  askQuestion: (question: string, context?: Record<string, unknown>) =>
-    apiClient.post('/ai/ask', { question, context }),
+  askQuestion: (question: string, context?: Record<string, unknown>, conversationId?: string) =>
+    apiClient.post('/ai/ask', { question, context, conversationId }),
+
+  // Conversations
+  listConversations: (limit?: number) =>
+    apiClient.get('/ai/conversations', { params: { limit } }),
+
+  getConversation: (id: string) =>
+    apiClient.get(`/ai/conversations/${id}`),
+
+  deleteConversation: (id: string) =>
+    apiClient.delete(`/ai/conversations/${id}`),
 };
 
 // Trade Request API
@@ -462,6 +472,9 @@ export const adminApi = {
   updateUser: (id: string, data: { isActive?: boolean; role?: string }) =>
     apiClient.patch(`/admin/users/${id}`, data),
 
+  reviewUser: (id: string, data: { action: 'approve' | 'reject'; notes?: string }) =>
+    apiClient.post(`/admin/users/${id}/review`, data),
+
   // Fund requests
   listFundRequests: (params?: { statusFilter?: string; limit?: number; offset?: number }) =>
     apiClient.get('/admin/fund-requests', { params }),
@@ -485,6 +498,36 @@ export const adminApi = {
 
   listTransactions: (params?: { limit?: number; offset?: number }) =>
     apiClient.get('/admin/transactions', { params }),
+};
+
+// Screener API
+export const screenerApi = {
+  getStocks: (params?: { sector?: string; minPe?: number; maxPe?: number; minHealth?: number; minDividend?: number; minRevenueGrowth?: number; sortBy?: string; limit?: number }) =>
+    apiClient.get('/screener/stocks', { params }),
+
+  getSectors: () => apiClient.get('/screener/sectors'),
+};
+
+// Health Cards API
+export const healthCardsApi = {
+  list: () => apiClient.get('/health-cards/'),
+
+  get: (symbol: string) => apiClient.get(`/health-cards/${symbol}`),
+};
+
+// News API
+export const newsApi = {
+  list: (params?: { category?: string; symbol?: string; limit?: number }) =>
+    apiClient.get('/news/', { params }),
+};
+
+// NGX Module API
+export const ngxApi = {
+  getSummary: () => apiClient.get('/ngx/summary'),
+
+  getMovers: () => apiClient.get('/ngx/movers'),
+
+  getStocks: () => apiClient.get('/ngx/stocks'),
 };
 
 export default apiClient;

@@ -1,9 +1,24 @@
 from datetime import datetime, timedelta
 from typing import Optional
+import hashlib
+import hmac
 import uuid
 from jose import JWTError, jwt
 import bcrypt
 from app.config import settings
+
+
+def hash_kyc_id(value: str) -> str:
+    """
+    Deterministic HMAC-SHA256 hash for KYC identifiers (NIN, BVN).
+    Deterministic so duplicate detection works; keyed so raw values
+    cannot be recovered or rainbow-table attacked without the secret key.
+    """
+    return hmac.new(
+        settings.secret_key.encode("utf-8"),
+        value.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

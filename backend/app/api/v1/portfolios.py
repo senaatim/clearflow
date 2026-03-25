@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from typing import Optional
+from datetime import datetime
 
-from app.database import get_db
 from app.models.user import User
 from app.models.portfolio import Portfolio
 from app.models.asset import Asset
@@ -17,39 +15,27 @@ from app.schemas.portfolio import (
 )
 from app.schemas.asset import AssetCreate, AssetUpdate, AssetResponse
 from app.api.deps import get_current_user
+from app.middleware.subscription import require_subscription, Features
+
+_portfolio_access = require_subscription(Features.PORTFOLIO_TRACKING)
 
 router = APIRouter()
 
-
-# Color palette for allocation
 ALLOCATION_COLORS = [
-    "#00ffaa",  # Primary green
-    "#00d4ff",  # Cyan
-    "#00ff88",  # Success green
-    "#ffbb00",  # Warning yellow
-    "#ff6b9d",  # Pink
-    "#a855f7",  # Purple
-    "#ff9f43",  # Orange
+    "#00ffaa", "#00d4ff", "#00ff88", "#ffbb00",
+    "#ff6b9d", "#a855f7", "#ff9f43",
 ]
 
 
 @router.get("", response_model=list[PortfolioResponse])
-async def list_portfolios(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """List all portfolios for the current user."""
-    result = await db.execute(
-        select(Portfolio).where(Portfolio.user_id == current_user.id)
-    )
-    portfolios = result.scalars().all()
+async def list_portfolios(current_user: User = Depends(_portfolio_access)):
+    portfolios = await Portfolio.find(Portfolio.user_id == current_user.id).to_list()
 
-    # Calculate totals for each portfolio
     response = []
     for portfolio in portfolios:
-        await db.refresh(portfolio, ["assets"])
-        total_value = sum(asset.current_value for asset in portfolio.assets)
-        total_cost = sum(asset.cost_basis for asset in portfolio.assets)
+        assets = await Asset.find(Asset.portfolio_id == portfolio.id).to_list()
+        total_value = sum(a.current_value for a in assets)
+        total_cost = sum(a.cost_basis for a in assets)
         total_return = total_value - total_cost
         return_percentage = (total_return / total_cost * 100) if total_cost > 0 else 0
 
@@ -65,10 +51,8 @@ async def list_portfolios(
 @router.post("", response_model=PortfolioResponse, status_code=status.HTTP_201_CREATED)
 async def create_portfolio(
     portfolio_data: PortfolioCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_portfolio_access),
 ):
-    """Create a new portfolio."""
     portfolio = Portfolio(
         user_id=current_user.id,
         name=portfolio_data.name,
@@ -76,53 +60,41 @@ async def create_portfolio(
         description=portfolio_data.description,
         currency=portfolio_data.currency,
     )
-
-    db.add(portfolio)
-    await db.commit()
-    await db.refresh(portfolio)
-
+    await portfolio.insert()
     return PortfolioResponse.model_validate(portfolio)
 
 
 @router.get("/{portfolio_id}", response_model=PortfolioWithAssets)
 async def get_portfolio(
     portfolio_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_portfolio_access),
 ):
-    """Get a specific portfolio with its assets."""
-    result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == portfolio_id,
-            Portfolio.user_id == current_user.id,
-        )
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id,
     )
-    portfolio = result.scalar_one_or_none()
 
     if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    await db.refresh(portfolio, ["assets"])
+    assets = await Asset.find(Asset.portfolio_id == portfolio.id).to_list()
 
-    # Build response with computed values
-    assets_data = []
-    for asset in portfolio.assets:
-        assets_data.append({
-            "id": asset.id,
-            "symbol": asset.symbol,
-            "name": asset.name,
-            "asset_type": asset.asset_type.value,
-            "category": asset.category,
-            "quantity": asset.quantity,
-            "average_cost": asset.average_cost,
-            "current_price": asset.current_price,
-            "current_value": asset.current_value,
-            "gain_loss": asset.gain_loss,
-            "gain_loss_percentage": asset.gain_loss_percentage,
-        })
+    assets_data = [
+        {
+            "id": a.id,
+            "symbol": a.symbol,
+            "name": a.name,
+            "asset_type": a.asset_type.value,
+            "category": a.category,
+            "quantity": a.quantity,
+            "average_cost": a.average_cost,
+            "current_price": a.current_price,
+            "current_value": a.current_value,
+            "gain_loss": a.gain_loss,
+            "gain_loss_percentage": a.gain_loss_percentage,
+        }
+        for a in assets
+    ]
 
     total_value = sum(a["current_value"] for a in assets_data)
     total_cost = sum(a["quantity"] * a["average_cost"] for a in assets_data)
@@ -142,30 +114,22 @@ async def get_portfolio(
 async def update_portfolio(
     portfolio_id: str,
     updates: PortfolioUpdate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_portfolio_access),
 ):
-    """Update a portfolio."""
-    result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == portfolio_id,
-            Portfolio.user_id == current_user.id,
-        )
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id,
     )
-    portfolio = result.scalar_one_or_none()
 
     if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
     update_data = updates.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(portfolio, field, value)
 
-    await db.commit()
-    await db.refresh(portfolio)
+    portfolio.updated_at = datetime.utcnow()
+    await portfolio.save()
 
     return PortfolioResponse.model_validate(portfolio)
 
@@ -173,58 +137,44 @@ async def update_portfolio(
 @router.delete("/{portfolio_id}")
 async def delete_portfolio(
     portfolio_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_portfolio_access),
 ):
-    """Delete a portfolio."""
-    result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == portfolio_id,
-            Portfolio.user_id == current_user.id,
-        )
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id,
     )
-    portfolio = result.scalar_one_or_none()
 
     if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    await db.delete(portfolio)
-    await db.commit()
+    # Delete related assets and transactions
+    await Asset.find(Asset.portfolio_id == portfolio_id).delete()
+    from app.models.transaction import Transaction
+    await Transaction.find(Transaction.portfolio_id == portfolio_id).delete()
 
+    await portfolio.delete()
     return {"success": True, "message": "Portfolio deleted"}
 
 
 @router.get("/{portfolio_id}/allocation", response_model=list[AllocationItem])
 async def get_allocation(
     portfolio_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_portfolio_access),
 ):
-    """Get portfolio asset allocation."""
-    result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == portfolio_id,
-            Portfolio.user_id == current_user.id,
-        )
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id,
     )
-    portfolio = result.scalar_one_or_none()
 
     if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    await db.refresh(portfolio, ["assets"])
+    assets = await Asset.find(Asset.portfolio_id == portfolio_id).to_list()
 
-    # Group assets by category
     category_totals: dict[str, dict] = {}
     total_value = 0
 
-    for asset in portfolio.assets:
+    for asset in assets:
         value = asset.current_value
         total_value += value
 
@@ -236,7 +186,6 @@ async def get_allocation(
             }
         category_totals[asset.category]["value"] += value
 
-    # Calculate percentages and assign colors
     allocations = []
     for i, (category, data) in enumerate(category_totals.items()):
         percentage = (data["value"] / total_value * 100) if total_value > 0 else 0
@@ -248,9 +197,7 @@ async def get_allocation(
             color=ALLOCATION_COLORS[i % len(ALLOCATION_COLORS)],
         ))
 
-    # Sort by percentage descending
     allocations.sort(key=lambda x: x.percentage, reverse=True)
-
     return allocations
 
 
@@ -258,27 +205,18 @@ async def get_allocation(
 async def get_performance(
     portfolio_id: str,
     period: str = "1y",
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_portfolio_access),
 ):
-    """Get portfolio performance data."""
-    result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == portfolio_id,
-            Portfolio.user_id == current_user.id,
-        )
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id,
     )
-    portfolio = result.scalar_one_or_none()
 
     if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    # Generate mock performance data
     import random
-    from datetime import datetime, timedelta
+    from datetime import timedelta
 
     months = {"1m": 1, "3m": 3, "6m": 6, "1y": 12, "all": 24}.get(period.lower(), 12)
     base_value = 220000
@@ -286,7 +224,6 @@ async def get_performance(
 
     for i in range(months):
         date = datetime.now() - timedelta(days=(months - i) * 30)
-        # Simulate growth with some variance
         growth = 1 + (random.uniform(-0.02, 0.04) + 0.01)
         base_value *= growth
 
@@ -299,52 +236,41 @@ async def get_performance(
     return data
 
 
-# Asset endpoints
 @router.get("/{portfolio_id}/assets", response_model=list[AssetResponse])
 async def list_assets(
     portfolio_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_portfolio_access),
 ):
-    """List all assets in a portfolio."""
-    result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == portfolio_id,
-            Portfolio.user_id == current_user.id,
-        )
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id,
     )
-    portfolio = result.scalar_one_or_none()
 
     if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    await db.refresh(portfolio, ["assets"])
+    assets = await Asset.find(Asset.portfolio_id == portfolio_id).to_list()
 
     return [
-        AssetResponse(
-            **{
-                "id": asset.id,
-                "portfolio_id": asset.portfolio_id,
-                "symbol": asset.symbol,
-                "name": asset.name,
-                "asset_type": asset.asset_type,
-                "category": asset.category,
-                "quantity": asset.quantity,
-                "average_cost": asset.average_cost,
-                "current_price": asset.current_price,
-                "last_price_update": asset.last_price_update,
-                "current_value": asset.current_value,
-                "cost_basis": asset.cost_basis,
-                "gain_loss": asset.gain_loss,
-                "gain_loss_percentage": asset.gain_loss_percentage,
-                "created_at": asset.created_at,
-                "updated_at": asset.updated_at,
-            }
-        )
-        for asset in portfolio.assets
+        AssetResponse(**{
+            "id": a.id,
+            "portfolio_id": a.portfolio_id,
+            "symbol": a.symbol,
+            "name": a.name,
+            "asset_type": a.asset_type,
+            "category": a.category,
+            "quantity": a.quantity,
+            "average_cost": a.average_cost,
+            "current_price": a.current_price,
+            "last_price_update": a.last_price_update,
+            "current_value": a.current_value,
+            "cost_basis": a.cost_basis,
+            "gain_loss": a.gain_loss,
+            "gain_loss_percentage": a.gain_loss_percentage,
+            "created_at": a.created_at,
+            "updated_at": a.updated_at,
+        })
+        for a in assets
     ]
 
 
@@ -352,23 +278,15 @@ async def list_assets(
 async def add_asset(
     portfolio_id: str,
     asset_data: AssetCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_portfolio_access),
 ):
-    """Add an asset to a portfolio."""
-    result = await db.execute(
-        select(Portfolio).where(
-            Portfolio.id == portfolio_id,
-            Portfolio.user_id == current_user.id,
-        )
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id,
     )
-    portfolio = result.scalar_one_or_none()
 
     if not portfolio:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Portfolio not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
     asset = Asset(
         portfolio_id=portfolio_id,
@@ -378,30 +296,25 @@ async def add_asset(
         category=asset_data.category,
         quantity=asset_data.quantity,
         average_cost=asset_data.average_cost,
-        current_price=asset_data.average_cost,  # Initial price = cost
+        current_price=asset_data.average_cost,
     )
+    await asset.insert()
 
-    db.add(asset)
-    await db.commit()
-    await db.refresh(asset)
-
-    return AssetResponse(
-        **{
-            "id": asset.id,
-            "portfolio_id": asset.portfolio_id,
-            "symbol": asset.symbol,
-            "name": asset.name,
-            "asset_type": asset.asset_type,
-            "category": asset.category,
-            "quantity": asset.quantity,
-            "average_cost": asset.average_cost,
-            "current_price": asset.current_price,
-            "last_price_update": asset.last_price_update,
-            "current_value": asset.current_value,
-            "cost_basis": asset.cost_basis,
-            "gain_loss": asset.gain_loss,
-            "gain_loss_percentage": asset.gain_loss_percentage,
-            "created_at": asset.created_at,
-            "updated_at": asset.updated_at,
-        }
-    )
+    return AssetResponse(**{
+        "id": asset.id,
+        "portfolio_id": asset.portfolio_id,
+        "symbol": asset.symbol,
+        "name": asset.name,
+        "asset_type": asset.asset_type,
+        "category": asset.category,
+        "quantity": asset.quantity,
+        "average_cost": asset.average_cost,
+        "current_price": asset.current_price,
+        "last_price_update": asset.last_price_update,
+        "current_value": asset.current_value,
+        "cost_basis": asset.cost_basis,
+        "gain_loss": asset.gain_loss,
+        "gain_loss_percentage": asset.gain_loss_percentage,
+        "created_at": asset.created_at,
+        "updated_at": asset.updated_at,
+    })

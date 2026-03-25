@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { useAuthStore } from '@/stores/auth-store';
 import { authApi, handleApiError } from '@/lib/api-client';
 
 const SPECIAL_CHARS = /[!@#$%^&*()\-_=+\[\]{}|;':",./<>?\\`~]/;
@@ -29,6 +27,12 @@ const registerSchema = z
       .max(50, 'Last name must not exceed 50 characters')
       .regex(/^[A-Za-z\s'\-]+$/, "Last name may only contain letters, spaces, hyphens, or apostrophes"),
     email: z.string().email('Please enter a valid email'),
+    nin: z
+      .string()
+      .regex(/^\d{11}$/, 'NIN must be exactly 11 digits'),
+    bvn: z
+      .string()
+      .regex(/^\d{11}$/, 'BVN must be exactly 11 digits'),
     password: z
       .string()
       .min(10, 'Password must be at least 10 characters')
@@ -69,8 +73,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
-  const { login } = useAuthStore();
+  const [submitted, setSubmitted] = useState(false);
 
   const {
     register,
@@ -91,26 +94,54 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      const response = await authApi.register({
+      await authApi.register({
         email: data.email,
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
+        nin: data.nin,
+        bvn: data.bvn,
       });
-      const { user, accessToken, refreshToken } = response.data;
 
-      login(user, accessToken, refreshToken);
-
-      // Wait for zustand persist to write to localStorage
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      router.push('/dashboard');
+      setSubmitted(true);
     } catch (err) {
       setError(handleApiError(err));
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (submitted) {
+    return (
+      <div className="space-y-6 text-center">
+        <div className="inline-flex items-center gap-3 mb-2">
+          <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center font-mono font-bold text-2xl text-background-primary">
+            CF
+          </div>
+          <span className="text-2xl font-bold tracking-tight">ClearFlow</span>
+        </div>
+        <Card className="p-8 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto">
+            <Check className="w-8 h-8 text-success" />
+          </div>
+          <h2 className="text-xl font-bold">Registration Submitted</h2>
+          <p className="text-text-secondary text-sm">
+            Your account is under review. Our team will verify your details and grant you access shortly.
+          </p>
+          <p className="text-xs text-text-muted">
+            You can try signing in once your account has been approved.
+          </p>
+          <Link
+            href="/login"
+            className="inline-block mt-2 text-sm text-accent-primary hover:underline"
+          >
+            Go to Sign In
+          </Link>
+        </Card>
+        <p className="text-center text-xs text-text-muted">A subsidiary of Jbryanson Globals Limited</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -157,6 +188,27 @@ export default function RegisterPage() {
             error={errors.email?.message}
             {...register('email')}
           />
+
+          {/* KYC fields */}
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="NIN"
+              placeholder="11-digit NIN"
+              maxLength={11}
+              error={errors.nin?.message}
+              {...register('nin')}
+            />
+            <Input
+              label="BVN"
+              placeholder="11-digit BVN"
+              maxLength={11}
+              error={errors.bvn?.message}
+              {...register('bvn')}
+            />
+          </div>
+          <p className="text-xs text-text-muted -mt-3">
+            Your NIN and BVN are encrypted and used only for identity verification.
+          </p>
 
           {/* Password field */}
           <div className="space-y-2">

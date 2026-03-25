@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { StatCard } from '@/components/ui/stat-card';
 import { formatCurrency } from '@/lib/utils';
 import { taxApi } from '@/lib/api-client';
+import { UpgradeGate } from '@/components/ui/upgrade-gate';
 import type { TaxSummary, TaxHarvestingOpportunity } from '@/types';
 
 interface GainLossEvent {
@@ -23,6 +24,7 @@ export default function TaxOptimizationPage() {
   const [harvestingOpportunities, setHarvestingOpportunities] = useState<TaxHarvestingOpportunity[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<GainLossEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,8 +40,8 @@ export default function TaxOptimizationPage() {
         setHarvestingOpportunities(Array.isArray(harvest) ? harvest : harvest.data ?? []);
         const gains = gainsRes.data;
         setRecentTransactions(Array.isArray(gains) ? gains : gains.data ?? []);
-      } catch {
-        // silently fail — empty states shown below
+      } catch (err: any) {
+        if (err?.response?.status === 403) setForbidden(true);
       } finally {
         setLoading(false);
       }
@@ -51,6 +53,19 @@ export default function TaxOptimizationPage() {
     (sum, o) => sum + o.potentialTaxSavings,
     0
   );
+
+  if (forbidden) {
+    return (
+      <>
+        <Header title="Tax Optimization" subtitle="Maximize your after-tax returns with smart tax strategies" />
+        <UpgradeGate
+          requiredTier="premium"
+          featureName="Tax Optimization"
+          description="Unlock tax-loss harvesting, gain/loss tracking, and smart tax strategies with ClearFlow Premium."
+        />
+      </>
+    );
+  }
 
   return (
     <>

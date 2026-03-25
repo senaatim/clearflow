@@ -1,41 +1,39 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from datetime import datetime, timedelta
 
-from app.database import get_db
 from app.models.user import User
 from app.models.subscription import (
-    Subscription,
-    SubscriptionTier,
-    SubscriptionStatus,
-    TIER_FEATURES,
-    TIER_PRICING,
+    Subscription, SubscriptionTier, SubscriptionStatus,
+    TIER_FEATURES, TIER_PRICING,
 )
 from app.models.payment import Payment, PaymentStatus
 from app.schemas.subscription import (
-    SubscriptionCreate,
-    SubscriptionUpgrade,
-    SubscriptionResponse,
-    SubscriptionWithFeatures,
-    TierInfo,
-    TierFeature,
-    TiersResponse,
-    SubscriptionInvoice,
-    InvoicesResponse,
+    SubscriptionCreate, SubscriptionUpgrade, SubscriptionResponse,
+    SubscriptionWithFeatures, TierInfo, TierFeature, TiersResponse,
+    SubscriptionInvoice, InvoicesResponse,
 )
 from app.api.deps import get_current_user
 from app.middleware.subscription import get_user_subscription
 
 router = APIRouter()
 
-
-# Feature descriptions for display
 FEATURE_DESCRIPTIONS = {
+    "news_feed": "Daily financial news with AI sentiment analysis",
+    "basic_screener": "Screen stocks by sector and name",
+    "health_cards": "Company Health Cards with key financial metrics",
+    "full_screener": "Advanced screener with P/E, dividend, growth & risk filters",
     "portfolio_tracking": "Track and manage your investment portfolios",
     "basic_recommendations": "AI-powered investment recommendations",
     "basic_analytics": "Basic portfolio performance analytics",
     "market_summaries": "Weekly market and sector summaries",
+    "portfolio_builder": "Build and optimize multi-asset portfolios",
+    "behaviour_tools": "Investor behaviour analytics and bias detection",
+    "earnings_decoder": "Plain-English earnings report summaries",
+    "ngx_module": "NGX market data, top movers & index tracker",
+    "dcf_models": "Discounted Cash Flow valuation models",
+    "macro_dashboard": "Macroeconomic indicators and impact analysis",
+    "full_portfolio_analytics": "Advanced attribution, correlation & stress testing",
+    "priority_alerts": "Real-time price and news alerts",
     "advanced_analytics": "Advanced analytics with predictions and correlations",
     "tax_optimization": "Tax-loss harvesting and optimization suggestions",
     "downloadable_reports": "Generate and download detailed PDF reports",
@@ -49,7 +47,6 @@ FEATURE_DESCRIPTIONS = {
 
 @router.get("/tiers", response_model=TiersResponse)
 async def get_subscription_tiers():
-    """Get available subscription tiers with features and pricing."""
     all_features = set()
     for features in TIER_FEATURES.values():
         all_features.update(features)
@@ -67,8 +64,6 @@ async def get_subscription_tiers():
             )
             for feature in all_features
         ]
-
-        # Sort features: included first, then alphabetically
         features.sort(key=lambda f: (not f.included, f.name))
 
         tiers.append(TierInfo(
@@ -85,20 +80,14 @@ async def get_subscription_tiers():
 
 
 @router.get("/current", response_model=SubscriptionWithFeatures | None)
-async def get_current_subscription(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Get the current user's subscription."""
-    subscription = await get_user_subscription(db, current_user.id)
+async def get_current_subscription(current_user: User = Depends(get_current_user)):
+    subscription = await get_user_subscription(current_user.id)
 
     if not subscription:
         return None
 
     tier_pricing = TIER_PRICING[subscription.tier]
     tier_features = TIER_FEATURES[subscription.tier]
-
-    # Determine upgrade/downgrade options
     tier_order = [SubscriptionTier.basic, SubscriptionTier.pro, SubscriptionTier.premium]
     current_idx = tier_order.index(subscription.tier)
 
@@ -124,27 +113,21 @@ async def get_current_subscription(
 async def create_subscription(
     subscription_data: SubscriptionCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
-    """Create a new subscription (mock payment)."""
-    # Check if user already has a subscription
-    existing = await get_user_subscription(db, current_user.id)
+    existing = await get_user_subscription(current_user.id)
     if existing and existing.status == SubscriptionStatus.active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You already have an active subscription. Use upgrade endpoint to change plans.",
         )
 
-    # Calculate billing period
     period_days = 365 if subscription_data.billing_period == "yearly" else 30
     period_start = datetime.utcnow()
     period_end = period_start + timedelta(days=period_days)
 
-    # Get pricing
     pricing = TIER_PRICING[subscription_data.tier]
     amount = pricing["yearly"] if subscription_data.billing_period == "yearly" else pricing["monthly"]
 
-    # Create or update subscription
     if existing:
         existing.tier = subscription_data.tier
         existing.status = SubscriptionStatus.active
@@ -152,6 +135,8 @@ async def create_subscription(
         existing.current_period_end = period_end
         existing.canceled_at = None
         existing.cancel_at_period_end = False
+        existing.updated_at = datetime.utcnow()
+        await existing.save()
         subscription = existing
     else:
         subscription = Subscription(
@@ -163,25 +148,19 @@ async def create_subscription(
             stripe_customer_id=f"mock_cus_{current_user.id[:8]}",
             stripe_subscription_id=f"mock_sub_{subscription_data.tier.value}",
         )
-        db.add(subscription)
+        await subscription.insert()
 
-    await db.flush()
-
-    # Create payment record
     payment = Payment(
         user_id=current_user.id,
         subscription_id=subscription.id,
-        amount=amount / 100,  # Convert cents to dollars
-        currency="USD",
+        amount=amount / 100,
+        currency="NGN",
         status=PaymentStatus.completed,
         description=f"{pricing['name']} Plan - {subscription_data.billing_period.capitalize()} Subscription",
         stripe_payment_intent_id=f"mock_pi_{subscription.id[:8]}",
         completed_at=datetime.utcnow(),
     )
-    db.add(payment)
-
-    await db.commit()
-    await db.refresh(subscription)
+    await payment.insert()
 
     return SubscriptionResponse.model_validate(subscription)
 
@@ -190,16 +169,11 @@ async def create_subscription(
 async def upgrade_subscription(
     upgrade_data: SubscriptionUpgrade,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
-    """Upgrade subscription to a higher tier."""
-    subscription = await get_user_subscription(db, current_user.id)
+    subscription = await get_user_subscription(current_user.id)
 
     if not subscription:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No subscription found. Please subscribe first.",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No subscription found. Please subscribe first.")
 
     tier_order = [SubscriptionTier.basic, SubscriptionTier.pro, SubscriptionTier.premium]
     current_idx = tier_order.index(subscription.tier)
@@ -211,114 +185,77 @@ async def upgrade_subscription(
             detail="New tier must be higher than current tier. Use downgrade endpoint for lower tiers.",
         )
 
-    # Update subscription
     subscription.tier = upgrade_data.tier
     subscription.status = SubscriptionStatus.active
+    subscription.updated_at = datetime.utcnow()
+    await subscription.save()
 
-    # Record upgrade payment (prorated in real system)
     pricing = TIER_PRICING[upgrade_data.tier]
     payment = Payment(
         user_id=current_user.id,
         subscription_id=subscription.id,
         amount=pricing["monthly"] / 100,
-        currency="USD",
+        currency="NGN",
         status=PaymentStatus.completed,
         description=f"Upgrade to {pricing['name']} Plan",
         stripe_payment_intent_id=f"mock_pi_upgrade_{subscription.id[:8]}",
         completed_at=datetime.utcnow(),
     )
-    db.add(payment)
-
-    await db.commit()
-    await db.refresh(subscription)
+    await payment.insert()
 
     return SubscriptionResponse.model_validate(subscription)
 
 
 @router.post("/cancel", response_model=SubscriptionResponse)
-async def cancel_subscription(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Cancel subscription at period end."""
-    subscription = await get_user_subscription(db, current_user.id)
+async def cancel_subscription(current_user: User = Depends(get_current_user)):
+    subscription = await get_user_subscription(current_user.id)
 
     if not subscription:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No subscription found.",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No subscription found.")
 
     if subscription.status != SubscriptionStatus.active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Subscription is not active.",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Subscription is not active.")
 
     subscription.cancel_at_period_end = True
     subscription.canceled_at = datetime.utcnow()
-
-    await db.commit()
-    await db.refresh(subscription)
+    subscription.updated_at = datetime.utcnow()
+    await subscription.save()
 
     return SubscriptionResponse.model_validate(subscription)
 
 
 @router.post("/reactivate", response_model=SubscriptionResponse)
-async def reactivate_subscription(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Reactivate a canceled subscription before it expires."""
-    subscription = await get_user_subscription(db, current_user.id)
+async def reactivate_subscription(current_user: User = Depends(get_current_user)):
+    subscription = await get_user_subscription(current_user.id)
 
     if not subscription:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No subscription found.",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No subscription found.")
 
     if not subscription.cancel_at_period_end:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Subscription is not scheduled for cancellation.",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Subscription is not scheduled for cancellation.")
 
     subscription.cancel_at_period_end = False
     subscription.canceled_at = None
-
-    await db.commit()
-    await db.refresh(subscription)
+    subscription.updated_at = datetime.utcnow()
+    await subscription.save()
 
     return SubscriptionResponse.model_validate(subscription)
 
 
 @router.get("/invoices", response_model=InvoicesResponse)
-async def get_invoices(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Get payment history for the current user."""
-    result = await db.execute(
-        select(Payment)
-        .where(Payment.user_id == current_user.id)
-        .order_by(Payment.created_at.desc())
-    )
-    payments = result.scalars().all()
+async def get_invoices(current_user: User = Depends(get_current_user)):
+    payments = await Payment.find(Payment.user_id == current_user.id).sort(-Payment.created_at).to_list()
 
     invoices = [
         SubscriptionInvoice(
-            id=payment.id,
-            amount=payment.amount,
-            currency=payment.currency,
-            status=payment.status.value,
-            description=payment.description or "Subscription Payment",
-            created_at=payment.created_at,
+            id=p.id,
+            amount=p.amount,
+            currency=p.currency,
+            status=p.status.value,
+            description=p.description or "Subscription Payment",
+            created_at=p.created_at,
         )
-        for payment in payments
+        for p in payments
     ]
 
-    return InvoicesResponse(
-        invoices=invoices,
-        total_count=len(invoices),
-    )
+    return InvoicesResponse(invoices=invoices, total_count=len(invoices))

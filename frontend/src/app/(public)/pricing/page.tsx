@@ -9,18 +9,22 @@ import type { TierInfo, SubscriptionTier } from '@/types';
 
 // Feature comparison data
 const FEATURE_COMPARISON = [
-  { feature: 'Portfolio Tracking', basic: true, pro: true, premium: true },
-  { feature: 'AI Recommendations', basic: true, pro: true, premium: true },
-  { feature: 'Basic Analytics', basic: true, pro: true, premium: true },
-  { feature: 'Market Summaries', basic: true, pro: true, premium: true },
-  { feature: 'Advanced Analytics', basic: false, pro: true, premium: true },
-  { feature: 'Tax Optimization', basic: false, pro: true, premium: true },
-  { feature: 'Downloadable Reports', basic: false, pro: true, premium: true },
-  { feature: 'Weekly Digest Emails', basic: false, pro: true, premium: true },
-  { feature: 'Broker-Assisted Execution', basic: false, pro: false, premium: true },
-  { feature: 'Robo-Advisor Suggestions', basic: false, pro: false, premium: true },
-  { feature: 'API Access', basic: false, pro: false, premium: true },
-  { feature: 'Priority Support', basic: false, pro: false, premium: true },
+  { feature: 'News Intelligence Feed', basic: true,  pro: true,  premium: true  },
+  { feature: 'Basic Stock Screener',   basic: true,  pro: true,  premium: true  },
+  { feature: 'Company Health Cards',   basic: true,  pro: true,  premium: true  },
+  { feature: 'Full Stock Screener',    basic: false, pro: true,  premium: true  },
+  { feature: 'Portfolio Builder',      basic: false, pro: true,  premium: true  },
+  { feature: 'Behaviour Tools',        basic: false, pro: true,  premium: true  },
+  { feature: 'Earnings Decoder',       basic: false, pro: true,  premium: true  },
+  { feature: 'NGX Module',             basic: false, pro: true,  premium: true  },
+  { feature: 'AI Recommendations',     basic: false, pro: true,  premium: true  },
+  { feature: 'DCF Valuation Models',   basic: false, pro: false, premium: true  },
+  { feature: 'Macro Dashboard',        basic: false, pro: false, premium: true  },
+  { feature: 'Full Portfolio Analytics',basic: false, pro: false, premium: true },
+  { feature: 'Priority Alerts',        basic: false, pro: false, premium: true  },
+  { feature: 'Tax Optimization',       basic: false, pro: false, premium: true  },
+  { feature: 'Broker-Assisted Trading',basic: false, pro: false, premium: true  },
+  { feature: 'Priority Support',       basic: false, pro: false, premium: true  },
 ];
 
 const FAQ = [
@@ -74,28 +78,28 @@ export default function PricingPage() {
       setTiers([
         {
           tier: 'basic',
-          name: 'Basic',
-          description: 'Essential tools for getting started',
-          monthlyPrice: 9.99,
-          yearlyPrice: 99.0,
+          name: 'Free',
+          description: 'News feed, basic screener & Company Health Cards',
+          monthlyPrice: 0,
+          yearlyPrice: 0,
           popular: false,
           features: [],
         },
         {
           tier: 'pro',
-          name: 'Pro',
-          description: 'Advanced analytics for serious investors',
-          monthlyPrice: 29.99,
-          yearlyPrice: 299.0,
+          name: 'ClearFlow Pro',
+          description: 'Full screener, Portfolio Builder, Earnings Decoder & NGX module',
+          monthlyPrice: 10000,
+          yearlyPrice: 96000,
           popular: true,
           features: [],
         },
         {
           tier: 'premium',
-          name: 'Premium',
-          description: 'Full-service with broker execution',
-          monthlyPrice: 79.99,
-          yearlyPrice: 799.0,
+          name: 'ClearFlow Premium',
+          description: 'DCF models, Macro Dashboard & full Portfolio Analytics',
+          monthlyPrice: 20000,
+          yearlyPrice: 192000,
           popular: false,
           features: [],
         },
@@ -118,7 +122,7 @@ export default function PricingPage() {
             Choose Your Plan
           </h1>
           <p className="text-lg text-text-secondary max-w-2xl mx-auto">
-            All plans include a 14-day free trial. No credit card required to start.
+            Start free — upgrade when you need more power. No credit card required.
           </p>
         </div>
 
@@ -167,7 +171,7 @@ export default function PricingPage() {
                     Feature
                   </th>
                   <th className="text-center py-4 px-4 text-sm font-semibold text-text-primary">
-                    Basic
+                    Free
                   </th>
                   <th className="text-center py-4 px-4 text-sm font-semibold text-accent-primary">
                     Pro

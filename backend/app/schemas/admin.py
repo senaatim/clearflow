@@ -6,6 +6,7 @@ from typing import Optional
 class AdminStatsResponse(BaseModel):
     total_users: int
     active_users: int
+    pending_reviews: int
     pending_deposits: int
     pending_trades: int
     total_aum: float
@@ -21,6 +22,7 @@ class AdminUserResponse(BaseModel):
     role: str
     is_active: bool
     is_verified: bool
+    account_status: str = "pending_review"
     created_at: datetime
     last_login: Optional[datetime] = None
 
@@ -36,6 +38,11 @@ class AdminUserListResponse(BaseModel):
 class AdminUserUpdate(BaseModel):
     is_active: Optional[bool] = None
     role: Optional[str] = None
+
+
+class AccountReviewRequest(BaseModel):
+    action: str  # "approve" or "reject"
+    notes: Optional[str] = None
 
 
 class TradeExecuteRequest(BaseModel):

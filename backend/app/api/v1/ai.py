@@ -8,7 +8,11 @@ from typing import Optional
 from datetime import datetime
 
 from app.api.deps import get_current_user
+from app.middleware.subscription import require_subscription, Features
 from app.models.user import User
+
+_ai_access = require_subscription(Features.ROBO_ADVISOR)
+from app.models.chat_conversation import ChatConversation, ChatMessage
 from app.services.ai_advisor import get_ai_advisor
 from app.services.market_data import MarketDataService
 
@@ -26,6 +30,7 @@ class PortfolioAnalysisRequest(BaseModel):
 class QuestionRequest(BaseModel):
     question: str
     context: Optional[dict] = None
+    conversation_id: Optional[str] = None
 
 
 class RecommendationRequest(BaseModel):
@@ -36,7 +41,7 @@ class RecommendationRequest(BaseModel):
 @router.get("/stock/{symbol}")
 async def analyze_stock(
     symbol: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get AI analysis for a specific stock."""
     advisor = get_ai_advisor()
@@ -51,7 +56,7 @@ async def analyze_stock(
 @router.get("/stock/{symbol}/quote")
 async def get_stock_quote(
     symbol: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get real-time stock quote."""
     service = MarketDataService()
@@ -67,7 +72,7 @@ async def get_stock_quote(
 async def get_stock_history(
     symbol: str,
     period: str = Query("1mo", regex="^(1d|5d|1mo|3mo|6mo|1y|2y|5y|max)$"),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get historical price data for a stock."""
     service = MarketDataService()
@@ -82,7 +87,7 @@ async def get_stock_history(
 @router.get("/stock/{symbol}/technicals")
 async def get_technical_indicators(
     symbol: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get technical indicators for a stock."""
     service = MarketDataService()
@@ -97,7 +102,7 @@ async def get_technical_indicators(
 @router.post("/recommendations")
 async def generate_recommendations(
     request: RecommendationRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Generate AI-powered stock recommendations."""
     advisor = get_ai_advisor()
@@ -117,7 +122,7 @@ async def generate_recommendations(
 @router.get("/recommendations/quick")
 async def get_quick_recommendations(
     count: int = Query(5, ge=1, le=10),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get quick AI recommendations from popular stocks."""
     advisor = get_ai_advisor()
@@ -133,7 +138,7 @@ async def get_quick_recommendations(
 @router.post("/portfolio/analyze")
 async def analyze_portfolio(
     request: PortfolioAnalysisRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get AI analysis of your portfolio."""
     if not request.holdings:
@@ -150,7 +155,7 @@ async def analyze_portfolio(
 
 @router.get("/market/summary")
 async def get_market_summary(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get current market summary with major indices."""
     service = MarketDataService()
@@ -159,7 +164,7 @@ async def get_market_summary(
 
 @router.get("/market/insights")
 async def get_market_insights(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get AI-generated market insights."""
     advisor = get_ai_advisor()
@@ -169,9 +174,9 @@ async def get_market_insights(
 @router.post("/ask")
 async def ask_question(
     request: QuestionRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
-    """Ask the AI advisor a question."""
+    """Ask the AI advisor a question. Creates or continues a conversation."""
     if not request.question or len(request.question.strip()) < 1:
         raise HTTPException(status_code=400, detail="Please enter a question")
 
@@ -180,18 +185,108 @@ async def ask_question(
     answer = await asyncio.to_thread(advisor.answer_question, request.question, request.context)
     print(f"[AI ASK] Answer starts with: '{answer[:60]}...'")
 
+    # Load or create conversation
+    conversation = None
+    if request.conversation_id:
+        conversation = await ChatConversation.find_one(
+            ChatConversation.id == request.conversation_id,
+            ChatConversation.user_id == current_user.id,
+        )
+
+    if not conversation:
+        title = request.question[:60] + ("..." if len(request.question) > 60 else "")
+        conversation = ChatConversation(user_id=current_user.id, title=title)
+        await conversation.insert()
+
+    user_msg = ChatMessage(role="user", content=request.question)
+    assistant_msg = ChatMessage(role="assistant", content=answer)
+    conversation.messages.append(user_msg)
+    conversation.messages.append(assistant_msg)
+    conversation.updated_at = datetime.utcnow()
+    await conversation.save()
+
     return {
         "question": request.question,
         "answer": answer,
+        "conversation_id": conversation.id,
         "disclaimer": "This is AI-generated advice for informational purposes only. Always consult a financial advisor before making investment decisions.",
         "generated_at": datetime.utcnow().isoformat(),
     }
 
 
+# ── Conversation management ──────────────────────────────────────────────────
+
+@router.get("/conversations")
+async def list_conversations(
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(_ai_access),
+):
+    """List all conversations for the current user, newest first."""
+    conversations = await ChatConversation.find(
+        ChatConversation.user_id == current_user.id
+    ).sort(-ChatConversation.updated_at).limit(limit).to_list()
+
+    return [
+        {
+            "id": c.id,
+            "title": c.title,
+            "message_count": len(c.messages),
+            "created_at": c.created_at.isoformat(),
+            "updated_at": c.updated_at.isoformat(),
+        }
+        for c in conversations
+    ]
+
+
+@router.get("/conversations/{conversation_id}")
+async def get_conversation(
+    conversation_id: str,
+    current_user: User = Depends(_ai_access),
+):
+    """Get a single conversation with all messages."""
+    conversation = await ChatConversation.find_one(
+        ChatConversation.id == conversation_id,
+        ChatConversation.user_id == current_user.id,
+    )
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    return {
+        "id": conversation.id,
+        "title": conversation.title,
+        "messages": [
+            {
+                "id": m.id,
+                "role": m.role,
+                "content": m.content,
+                "timestamp": m.timestamp.isoformat(),
+            }
+            for m in conversation.messages
+        ],
+        "created_at": conversation.created_at.isoformat(),
+        "updated_at": conversation.updated_at.isoformat(),
+    }
+
+
+@router.delete("/conversations/{conversation_id}", status_code=204)
+async def delete_conversation(
+    conversation_id: str,
+    current_user: User = Depends(_ai_access),
+):
+    """Delete a conversation."""
+    conversation = await ChatConversation.find_one(
+        ChatConversation.id == conversation_id,
+        ChatConversation.user_id == current_user.id,
+    )
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    await conversation.delete()
+
+
 @router.get("/news")
 async def get_market_news(
     limit: int = Query(20, ge=1, le=50),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get general financial news with AI summary."""
     service = MarketDataService()
@@ -213,7 +308,7 @@ async def get_market_news(
 async def get_stock_news(
     symbol: str,
     limit: int = Query(10, ge=1, le=30),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Get news for a specific stock with AI summary."""
     service = MarketDataService()
@@ -245,7 +340,7 @@ async def get_stock_news(
 async def search_stocks(
     query: str = Query(..., min_length=1),
     limit: int = Query(10, ge=1, le=50),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_ai_access),
 ):
     """Search for stocks by name or symbol."""
     service = MarketDataService()
