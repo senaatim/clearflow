@@ -42,7 +42,7 @@ function TradeRequestsContent() {
   const loadTrades = async () => {
     setIsLoading(true);
     try {
-      const params = filter !== 'all' ? { status_filter: filter } : {};
+      const params = filter !== 'all' ? { statusFilter: filter } : {};
       const response = await tradeApi.list(params);
       setTrades(response.data.trades || []);
       setStats({
