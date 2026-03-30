@@ -30,9 +30,6 @@ const registerSchema = z
     nin: z
       .string()
       .regex(/^\d{11}$/, 'NIN must be exactly 11 digits'),
-    bvn: z
-      .string()
-      .regex(/^\d{11}$/, 'BVN must be exactly 11 digits'),
     password: z
       .string()
       .min(10, 'Password must be at least 10 characters')
@@ -100,7 +97,6 @@ export default function RegisterPage() {
         firstName: data.firstName,
         lastName: data.lastName,
         nin: data.nin,
-        bvn: data.bvn,
       });
 
       setSubmitted(true);
@@ -190,24 +186,15 @@ export default function RegisterPage() {
           />
 
           {/* KYC fields */}
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="NIN"
-              placeholder="11-digit NIN"
-              maxLength={11}
-              error={errors.nin?.message}
-              {...register('nin')}
-            />
-            <Input
-              label="BVN"
-              placeholder="11-digit BVN"
-              maxLength={11}
-              error={errors.bvn?.message}
-              {...register('bvn')}
-            />
-          </div>
+          <Input
+            label="NIN"
+            placeholder="11-digit NIN"
+            maxLength={11}
+            error={errors.nin?.message}
+            {...register('nin')}
+          />
           <p className="text-xs text-text-muted -mt-3">
-            Your NIN and BVN are encrypted and used only for identity verification.
+            Your NIN is encrypted and used only for identity verification.
           </p>
 
           {/* Password field */}
