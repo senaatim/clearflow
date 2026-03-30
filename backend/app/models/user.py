@@ -48,7 +48,6 @@ class User(Document):
 
     # KYC fields — stored as HMAC-SHA256 hashes, never as plaintext
     nin_hash: Optional[str] = None
-    bvn_hash: Optional[str] = None
     kyc_status: KYCStatus = KYCStatus.pending
 
     account_status: AccountStatus = AccountStatus.pending_review
@@ -62,7 +61,6 @@ class User(Document):
             IndexModel([("email", ASCENDING)], unique=True),
             IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("nin_hash", ASCENDING)], unique=True, sparse=True),
-            IndexModel([("bvn_hash", ASCENDING)], unique=True, sparse=True),
         ]
 
     def __repr__(self) -> str:
