@@ -38,7 +38,6 @@ class FundRequest(Document):
     class Settings:
         name = "fund_requests"
         indexes = [
-            IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("user_id", ASCENDING)]),
         ]
 

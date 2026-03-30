@@ -43,7 +43,6 @@ class Subscription(Document):
     class Settings:
         name = "subscriptions"
         indexes = [
-            IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("user_id", ASCENDING)], unique=True),
         ]
 

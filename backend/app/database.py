@@ -27,13 +27,16 @@ async def init_db():
     client = get_client()
     db = client[settings.mongodb_db_name]
 
-    # Drop legacy indexes that no longer belong in the schema
-    for index_name in ("bvn_hash_1", "id_1"):
-        try:
-            await db["users"].drop_index(index_name)
-            print(f"Dropped legacy index: {index_name}")
-        except Exception:
-            pass
+    # Drop legacy id_1 and bvn_hash_1 indexes from all collections
+    collections = ["users", "subscriptions", "portfolios", "assets", "transactions",
+                   "recommendations", "payments", "trade_requests", "fund_requests"]
+    for col in collections:
+        for index_name in ("id_1", "bvn_hash_1"):
+            try:
+                await db[col].drop_index(index_name)
+                print(f"Dropped legacy index {index_name} from {col}")
+            except Exception:
+                pass
 
     await init_beanie(
         database=db,

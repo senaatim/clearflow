@@ -41,7 +41,6 @@ class Payment(Document):
     class Settings:
         name = "payments"
         indexes = [
-            IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("user_id", ASCENDING)]),
         ]
 

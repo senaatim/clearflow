@@ -72,7 +72,6 @@ class TradeRequest(Document):
     class Settings:
         name = "trade_requests"
         indexes = [
-            IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("user_id", ASCENDING)]),
         ]
 

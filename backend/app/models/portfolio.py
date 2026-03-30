@@ -32,7 +32,6 @@ class Portfolio(Document):
     class Settings:
         name = "portfolios"
         indexes = [
-            IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("user_id", ASCENDING)]),
         ]
 

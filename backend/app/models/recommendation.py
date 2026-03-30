@@ -52,7 +52,6 @@ class Recommendation(Document):
     class Settings:
         name = "recommendations"
         indexes = [
-            IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("user_id", ASCENDING)]),
         ]
 

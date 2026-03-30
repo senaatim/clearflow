@@ -35,7 +35,6 @@ class Asset(Document):
     class Settings:
         name = "assets"
         indexes = [
-            IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("portfolio_id", ASCENDING)]),
         ]
 

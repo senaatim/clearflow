@@ -34,7 +34,6 @@ class Transaction(Document):
     class Settings:
         name = "transactions"
         indexes = [
-            IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("portfolio_id", ASCENDING)]),
         ]
 
