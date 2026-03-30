@@ -107,11 +107,13 @@ apiClient.interceptors.response.use(
 // API error handler
 export function handleApiError(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ message?: string; detail?: string }>;
-    return axiosError.response?.data?.message ||
-           axiosError.response?.data?.detail ||
-           axiosError.message ||
-           'An unexpected error occurred';
+    const axiosError = error as AxiosError<{ message?: string; detail?: unknown }>;
+    const detail = axiosError.response?.data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+      return detail.map((d: { msg?: string }) => d.msg ?? JSON.stringify(d)).join('; ');
+    }
+    return axiosError.response?.data?.message || axiosError.message || 'An unexpected error occurred';
   }
   return 'An unexpected error occurred';
 }
