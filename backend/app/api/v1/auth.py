@@ -69,17 +69,11 @@ async def register(user_data: UserCreate, request: Request):
         )
 
     nin_hash = hash_kyc_id(user_data.nin)
-    bvn_hash = hash_kyc_id(user_data.bvn)
 
     if await User.find_one(User.nin_hash == nin_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="NIN already registered",
-        )
-    if await User.find_one(User.bvn_hash == bvn_hash):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="BVN already registered",
         )
 
     user = User(
@@ -88,7 +82,6 @@ async def register(user_data: UserCreate, request: Request):
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         nin_hash=nin_hash,
-        bvn_hash=bvn_hash,
     )
     await user.insert()
 

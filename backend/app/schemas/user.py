@@ -32,7 +32,6 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     nin: str
-    bvn: str
 
     @field_validator("email", mode="before")
     @classmethod
@@ -55,14 +54,6 @@ class UserCreate(BaseModel):
         v = v.strip()
         if not _KYC_ID_PATTERN.match(v):
             raise ValueError("NIN must be exactly 11 digits")
-        return v
-
-    @field_validator("bvn", mode="before")
-    @classmethod
-    def validate_bvn(cls, v: str) -> str:
-        v = v.strip()
-        if not _KYC_ID_PATTERN.match(v):
-            raise ValueError("BVN must be exactly 11 digits")
         return v
 
     @field_validator("password", mode="before")
