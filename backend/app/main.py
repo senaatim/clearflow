@@ -65,10 +65,15 @@ app.add_middleware(
 # Global exception handler — ensures CORS headers are present even on 500s
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(
+    response = JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"},
     )
+    origin = request.headers.get("origin", "")
+    if origin in settings.cors_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 
 # Include API routes
