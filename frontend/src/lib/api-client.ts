@@ -118,7 +118,7 @@ export function handleApiError(error: unknown): string {
 
 // Auth API
 export const authApi = {
-  register: (data: { email: string; password: string; firstName: string; lastName: string; nin: string; bvn: string }) =>
+  register: (data: { email: string; password: string; firstName: string; lastName: string; nin: string }) =>
     apiClient.post('/auth/register', data),
 
   login: (data: { email: string; password: string }) =>
