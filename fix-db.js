@@ -1,36 +1,64 @@
 const { MongoClient } = require('mongodb');
 
-// Using the credentials from your terminal input
-const uri = "mongodb+srv://senaatim10:sharon0808@cluster0.gyks1.mongodb.net/?appName=Cluster0";
-const client = new MongoClient(uri);
+const targets = [
+    { label: "Local", uri: "mongodb://localhost:27017" },
+    { label: "Atlas", uri: "mongodb+srv://senaatim10:sharon0808@cluster0.gyks1.mongodb.net/?appName=Cluster0" },
+];
 
-async function dropBvnIndex() {
+async function fixDatabase(label, uri) {
+    const client = new MongoClient(uri);
+    console.log(`\n========== ${label} ==========`);
     try {
         await client.connect();
-        // Replace 'your_database_name' with your actual DB name (e.g., 'ClearFlow' or 'test')
-        const database = client.db("clearflow");
-        const users = database.collection("users");
+        console.log("Connected.");
 
-        // Attempt to drop the index
-        // Note: It is usually named 'bvn_hash_1' by default in MongoDB
-        const result = await users.dropIndex("bvn_hash_1");
-        console.log("Successfully dropped index:", result);
-        
-        // List remaining indexes to verify
-        const indexes = await users.listIndexes().toArray();
-        console.log("Current indexes:", indexes.map(i => i.name));
+        const { databases } = await client.db().admin().listDatabases();
+
+        for (const { name } of databases) {
+            if (['admin', 'local', 'config'].includes(name)) continue;
+
+            const db = client.db(name);
+            const hasCols = await db.listCollections({ name: 'users' }).toArray();
+            if (!hasCols.length) continue;
+
+            console.log(`\nDatabase: "${name}" — found users collection`);
+            const users = db.collection('users');
+
+            // 1. List all indexes
+            const indexes = await users.listIndexes().toArray();
+            console.log("Indexes:", indexes.map(i => i.name).join(', '));
+
+            // 2. Drop bvn_hash index if it exists
+            const bvnIndex = indexes.find(i => i.key && i.key.bvn_hash !== undefined);
+            if (bvnIndex) {
+                await users.dropIndex(bvnIndex.name);
+                console.log(`✓ Dropped index: "${bvnIndex.name}"`);
+            } else {
+                console.log("No bvn_hash index found.");
+            }
+
+            // 3. Remove bvn_hash field from all documents
+            const result = await users.updateMany(
+                { bvn_hash: { $exists: true } },
+                { $unset: { bvn_hash: "" } }
+            );
+            console.log(`✓ Removed bvn_hash field from ${result.modifiedCount} document(s)`);
+
+            // 4. Confirm remaining indexes
+            const remaining = await users.listIndexes().toArray();
+            console.log("Remaining indexes:", remaining.map(i => i.name).join(', '));
+        }
 
     } catch (err) {
-        if (err.codeName === 'IndexNotFound') {
-            console.log("The index 'bvn_hash_1' wasn't found. It might have a different name.");
-            const current = await client.db("clearflow").collection("users").listIndexes().toArray();
-            console.log("Try one of these index names instead:", current.map(i => i.name));
-        } else {
-            console.error("Error:", err);
-        }
+        console.log(`✗ ${label} failed: ${err.message}`);
     } finally {
         await client.close();
     }
 }
 
-dropBvnIndex();
+(async () => {
+    for (const { label, uri } of targets) {
+        await fixDatabase(label, uri);
+    }
+    console.log("\n✓ Done.");
+})();

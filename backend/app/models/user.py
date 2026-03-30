@@ -59,7 +59,6 @@ class User(Document):
         name = "users"
         indexes = [
             IndexModel([("email", ASCENDING)], unique=True),
-            IndexModel([("id", ASCENDING)], unique=True),
             IndexModel([("nin_hash", ASCENDING)], unique=True, sparse=True),
         ]
 

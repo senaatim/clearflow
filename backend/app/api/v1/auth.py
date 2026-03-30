@@ -1,4 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from pymongo.errors import DuplicateKeyError
+import logging
+
+logger = logging.getLogger(__name__)
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime
 from collections import defaultdict
@@ -59,10 +63,12 @@ async def register(user_data: UserCreate, request: Request):
 
     valid, error_msg = is_strong_password(user_data.password)
     if not valid:
+        logger.warning("REGISTER 400 - weak password for %s: %s", user_data.email, error_msg)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     existing = await User.find_one(User.email == user_data.email)
     if existing:
+        logger.warning("REGISTER 400 - email already exists: %s", user_data.email)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -71,6 +77,7 @@ async def register(user_data: UserCreate, request: Request):
     nin_hash = hash_kyc_id(user_data.nin)
 
     if await User.find_one(User.nin_hash == nin_hash):
+        logger.warning("REGISTER 400 - NIN already exists for: %s", user_data.email)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="NIN already registered",
@@ -83,7 +90,14 @@ async def register(user_data: UserCreate, request: Request):
         last_name=user_data.last_name,
         nin_hash=nin_hash,
     )
-    await user.insert()
+    try:
+        await user.insert()
+    except DuplicateKeyError as e:
+        logger.error("REGISTER 400 - DuplicateKeyError for %s: %s", user_data.email, e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An account with this email or NIN already exists",
+        )
 
     access_token = create_access_token(data={"sub": user.id})
     refresh_token = create_refresh_token(data={"sub": user.id})

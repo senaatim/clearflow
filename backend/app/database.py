@@ -25,8 +25,18 @@ async def init_db():
     from app.models.chat_conversation import ChatConversation
 
     client = get_client()
+    db = client[settings.mongodb_db_name]
+
+    # Drop legacy indexes that no longer belong in the schema
+    for index_name in ("bvn_hash_1", "id_1"):
+        try:
+            await db["users"].drop_index(index_name)
+            print(f"Dropped legacy index: {index_name}")
+        except Exception:
+            pass
+
     await init_beanie(
-        database=client[settings.mongodb_db_name],
+        database=db,
         document_models=[
             User,
             Portfolio,
