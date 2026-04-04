@@ -42,7 +42,7 @@ async def screen_stocks(
     min_health: Optional[int] = None,
     min_dividend: Optional[float] = None,
     min_revenue_growth: Optional[float] = None,
-    sort_by: str = Query("market_cap", regex="^(market_cap|pe_ratio|revenue_growth|dividend_yield|health_score|change_pct|price)$"),
+    sort_by: str = Query("market_cap", pattern="^(market_cap|pe_ratio|revenue_growth|dividend_yield|health_score|change_pct|price)$"),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
 ):
