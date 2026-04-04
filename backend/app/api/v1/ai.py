@@ -71,7 +71,7 @@ async def get_stock_quote(
 @router.get("/stock/{symbol}/history")
 async def get_stock_history(
     symbol: str,
-    period: str = Query("1mo", regex="^(1d|5d|1mo|3mo|6mo|1y|2y|5y|max)$"),
+    period: str = Query("1mo", pattern="^(1d|5d|1mo|3mo|6mo|1y|2y|5y|max)$"),
     current_user: User = Depends(_ai_access),
 ):
     """Get historical price data for a stock."""
