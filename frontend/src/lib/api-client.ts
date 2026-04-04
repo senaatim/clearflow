@@ -89,7 +89,11 @@ apiClient.interceptors.response.use(
           const accessToken = response.data.access_token;
           useAuthStore.getState().setAccessToken(accessToken);
 
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          // Force the new token onto the retry — set it on both the config
+          // and the defaults so the request interceptor doesn't overwrite it
+          // with a stale value during parallel refresh races.
+          apiClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+          originalRequest.headers.set('Authorization', `Bearer ${accessToken}`);
           return apiClient(originalRequest);
         } catch (refreshError) {
           // Refresh failed, logout user

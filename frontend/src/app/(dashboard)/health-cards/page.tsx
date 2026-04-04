@@ -117,10 +117,10 @@ export default function HealthCardsPage() {
                     <div className="text-xs text-text-muted truncate max-w-[160px]">{card.name}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-mono text-sm font-semibold">₦{card.price.toLocaleString()}</div>
-                    <div className={`text-xs flex items-center justify-end gap-0.5 ${card.change_pct >= 0 ? 'text-success' : 'text-accent-danger'}`}>
-                      {card.change_pct >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {card.change_pct >= 0 ? '+' : ''}{card.change_pct.toFixed(1)}%
+                    <div className="font-mono text-sm font-semibold">₦{card.price?.toLocaleString() ?? '—'}</div>
+                    <div className={`text-xs flex items-center justify-end gap-0.5 ${(card.change_pct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
+                      {(card.change_pct ?? 0) >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                      {(card.change_pct ?? 0) >= 0 ? '+' : ''}{(card.change_pct ?? 0).toFixed(1)}%
                     </div>
                   </div>
                 </div>

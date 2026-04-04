@@ -46,7 +46,7 @@ const FAQ = [
   {
     question: 'What payment methods do you accept?',
     answer:
-      'We accept all major credit cards (Visa, MasterCard, American Express), debit cards, and select mobile money providers.',
+      'We currently accept bank transfers. Please make payment to: Jbryanson Globals Limited, Account No: 1224017438, Zenith Bank. Once payment is made, contact us to activate your subscription.',
   },
   {
     question: 'Is my data secure?',

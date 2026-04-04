@@ -30,6 +30,7 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(
     title=settings.app_name,
+    redirect_slashes=False,
     description="""
     ClearFlow - AI-Powered Investment and Portfolio Intelligence Platform
 

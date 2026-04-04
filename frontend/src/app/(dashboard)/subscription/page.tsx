@@ -245,7 +245,8 @@ export default function SubscriptionPage() {
               <CreditCard className="w-5 h-5 text-text-muted" />
               <div>
                 <p className="text-xs text-text-muted">Payment Method</p>
-                <p className="text-sm text-text-primary">•••• 4242</p>
+                <p className="text-sm text-text-primary">Bank Transfer — Zenith Bank</p>
+                <p className="text-xs text-text-muted">Jbryanson Globals Limited · 1224017438</p>
               </div>
             </div>
             <div className="flex items-center gap-3">

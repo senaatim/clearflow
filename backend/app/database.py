@@ -8,7 +8,11 @@ _client: AsyncIOMotorClient | None = None
 def get_client() -> AsyncIOMotorClient:
     global _client
     if _client is None:
-        _client = AsyncIOMotorClient(settings.mongodb_url)
+        _client = AsyncIOMotorClient(
+            settings.mongodb_url,
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
+        )
     return _client
 
 
@@ -27,7 +31,13 @@ async def init_db():
     client = get_client()
     db = client[settings.mongodb_db_name]
 
+    # Verify connection before proceeding
+    print("Pinging MongoDB...")
+    await client.admin.command("ping")
+    print("MongoDB ping OK")
+
     # Drop legacy id_1 and bvn_hash_1 indexes from all collections
+    print("Dropping legacy indexes...")
     collections = ["users", "subscriptions", "portfolios", "assets", "transactions",
                    "recommendations", "payments", "trade_requests", "fund_requests"]
     for col in collections:
@@ -38,6 +48,7 @@ async def init_db():
             except Exception:
                 pass
 
+    print("Initializing Beanie models...")
     await init_beanie(
         database=db,
         document_models=[

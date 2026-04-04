@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, CreditCard, Building2, Smartphone, ArrowRight, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { DollarSign, Building2, ArrowRight, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,32 +10,11 @@ import { formatCurrency } from '@/lib/utils';
 import { fundApi } from '@/lib/api-client';
 import type { FundRequest } from '@/types';
 
-const fundingMethods = [
-  {
-    id: 'bank',
-    name: 'Bank Transfer',
-    description: 'Transfer directly from your bank account',
-    icon: Building2,
-    fee: 'Free',
-    time: '1-3 business days',
-  },
-  {
-    id: 'card',
-    name: 'Debit Card',
-    description: 'Fund with your debit card',
-    icon: CreditCard,
-    fee: '1.5%',
-    time: '1-2 business days',
-  },
-  {
-    id: 'mobile_money',
-    name: 'Mobile Money',
-    description: 'Pay via mobile money',
-    icon: Smartphone,
-    fee: '1%',
-    time: '1 business day',
-  },
-];
+const BANK_DETAILS = {
+  accountName: 'Jbryanson Globals Limited',
+  accountNumber: '1224017438',
+  bank: 'Zenith Bank',
+};
 
 const quickAmounts = [1000, 2500, 5000, 10000];
 
@@ -45,7 +24,7 @@ export default function AddFundsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState('bank');
+  const selectedMethod = 'bank';
   const [userNotes, setUserNotes] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
@@ -186,41 +165,35 @@ export default function AddFundsPage() {
           </Card>
 
           <Card className="mb-8">
-            <CardHeader title="Funding Method" />
-            <div className="space-y-4">
-              {fundingMethods.map((method) => {
-                const Icon = method.icon;
-                return (
-                  <label
-                    key={method.id}
-                    className={`flex items-center gap-4 p-4 bg-background-tertiary rounded-xl cursor-pointer border-2 transition-colors ${
-                      selectedMethod === method.id
-                        ? 'border-accent-primary'
-                        : 'border-transparent hover:border-accent-primary/50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="fundingMethod"
-                      value={method.id}
-                      checked={selectedMethod === method.id}
-                      onChange={() => setSelectedMethod(method.id)}
-                      className="sr-only"
-                    />
-                    <div className="w-12 h-12 bg-accent-primary/10 rounded-xl flex items-center justify-center">
-                      <Icon className="w-6 h-6 text-accent-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-semibold mb-1">{method.name}</div>
-                      <div className="text-sm text-text-secondary">{method.description}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium">{method.fee}</div>
-                      <div className="text-xs text-text-muted">{method.time}</div>
-                    </div>
-                  </label>
-                );
-              })}
+            <CardHeader title="Payment Method" />
+            <div className="flex items-center gap-4 p-4 bg-background-tertiary rounded-xl border-2 border-accent-primary mb-4">
+              <div className="w-12 h-12 bg-accent-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-6 h-6 text-accent-primary" />
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold mb-0.5">Bank Transfer</div>
+                <div className="text-sm text-text-secondary">Transfer directly from your bank account — Free</div>
+              </div>
+              <div className="text-xs text-text-muted">1–3 business days</div>
+            </div>
+
+            <div className="bg-background-tertiary rounded-xl p-4 space-y-3">
+              <div className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Transfer to this account</div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-secondary">Bank</span>
+                <span className="text-sm font-semibold text-text-primary">{BANK_DETAILS.bank}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-secondary">Account Name</span>
+                <span className="text-sm font-semibold text-text-primary">{BANK_DETAILS.accountName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-secondary">Account Number</span>
+                <span className="text-sm font-bold font-mono text-accent-primary tracking-widest">{BANK_DETAILS.accountNumber}</span>
+              </div>
+              <p className="text-xs text-text-muted pt-2 border-t border-border">
+                Use your registered name or email as the transfer narration so we can match your payment quickly.
+              </p>
             </div>
           </Card>
 

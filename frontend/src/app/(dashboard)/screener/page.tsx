@@ -22,11 +22,13 @@ interface Stock {
   volume: number;
 }
 
-function fmt(n: number, dec = 2) {
+function fmt(n: number | undefined | null, dec = 2) {
+  if (n == null || isNaN(n)) return '—';
   return n.toLocaleString('en-NG', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
-function fmtCap(n: number) {
+function fmtCap(n: number | undefined | null) {
+  if (n == null || isNaN(n)) return '—';
   if (n >= 1e12) return `₦${(n / 1e12).toFixed(2)}T`;
   if (n >= 1e9) return `₦${(n / 1e9).toFixed(1)}B`;
   return `₦${(n / 1e6).toFixed(0)}M`;
@@ -229,9 +231,9 @@ export default function ScreenerPage() {
                     </td>
                     <td className="py-3 px-4 text-right font-mono text-sm">{fmt(s.price)}</td>
                     <td className="py-3 px-4 text-right">
-                      <span className={`text-sm font-medium flex items-center justify-end gap-0.5 ${s.change_pct >= 0 ? 'text-success' : 'text-accent-danger'}`}>
-                        {s.change_pct >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        {s.change_pct >= 0 ? '+' : ''}{fmt(s.change_pct)}%
+                      <span className={`text-sm font-medium flex items-center justify-end gap-0.5 ${(s.change_pct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
+                        {(s.change_pct ?? 0) >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {(s.change_pct ?? 0) >= 0 ? '+' : ''}{fmt(s.change_pct)}%
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right text-sm text-text-secondary font-mono">{fmtCap(s.market_cap)}</td>

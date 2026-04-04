@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from app.api.v1 import (
     auth, users, portfolios, recommendations, analytics, risk, tax,
     subscriptions, payments, trades, ai, funds, admin,
-    screener, health_cards, news, ngx,
+    screener, health_cards, news, ngx, reports, automation,
 )
 
 api_router = APIRouter()
@@ -24,3 +24,5 @@ api_router.include_router(screener.router, prefix="/screener", tags=["Screener"]
 api_router.include_router(health_cards.router, prefix="/health-cards", tags=["Health Cards"])
 api_router.include_router(news.router, prefix="/news", tags=["News"])
 api_router.include_router(ngx.router, prefix="/ngx", tags=["NGX Module"])
+api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
+api_router.include_router(automation.router, prefix="/automation", tags=["Automation"])

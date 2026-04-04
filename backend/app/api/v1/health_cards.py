@@ -178,6 +178,23 @@ _HEALTH_CARDS = {
         "risks": ["FX losses across African operations", "Rising NPLs in subsidiaries", "Thin margins"],
         "summary": "UBA offers pan-African diversification at an attractive valuation with strong earnings momentum and a solid dividend.",
     },
+    "TRANSCORP": {
+        "symbol": "TRANSCORP", "name": "Transcorp Hotels Plc", "sector": "Consumer Goods",
+        "price": 18.40, "change_pct": 3.1, "health_score": 68,
+        "rating": "Hold", "analyst_count": 6,
+        "revenue_bn": 82.4, "revenue_growth": 21.3,
+        "profit_margin": 12.8, "ebitda_margin": 28.5,
+        "pe_ratio": 11.2, "pb_ratio": 1.4, "ps_ratio": 1.1,
+        "debt_to_equity": 0.85, "current_ratio": 1.3, "quick_ratio": 1.0,
+        "roe": 12.4, "roa": 6.8, "roce": 10.9,
+        "eps": 1.64, "eps_growth": 18.7,
+        "dividend_yield": 2.1, "payout_ratio": 23.5,
+        "market_cap_bn": 328.0,
+        "52w_high": 22.50, "52w_low": 10.80,
+        "strengths": ["Recovery in hospitality demand", "Prime real estate assets", "Revenue diversification"],
+        "risks": ["FX exposure on imported goods", "High energy costs", "Sensitive to economic cycles"],
+        "summary": "Transcorp Hotels is riding Nigeria's hospitality recovery with improving margins, though high operating costs and FX exposure remain key risks to watch.",
+    },
 }
 
 # Free tier limit — max 3 health cards per session (in-memory, resets on restart)
@@ -185,7 +202,7 @@ _FREE_CARD_COUNTS: dict[str, int] = {}
 _FREE_LIMIT = 3
 
 
-@router.get("/")
+@router.get("")
 async def list_health_cards(current_user: User = Depends(get_current_user)):
     subscription = await get_user_subscription(current_user.id)
     is_free = not subscription or not tier_has_feature(subscription.tier, "health_cards")

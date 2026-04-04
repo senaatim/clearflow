@@ -198,7 +198,7 @@ _CATEGORIES = ["market", "economy", "company", "earnings", "policy"]
 _FREE_LIMIT = 5
 
 
-@router.get("/")
+@router.get("")
 async def get_news(
     category: Optional[str] = None,
     symbol: Optional[str] = None,

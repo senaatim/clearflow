@@ -81,9 +81,29 @@ async def get_subscription_tiers():
 
 @router.get("/current", response_model=SubscriptionWithFeatures | None)
 async def get_current_subscription(current_user: User = Depends(get_current_user)):
+    from app.models.user import UserRole
     subscription = await get_user_subscription(current_user.id)
 
     if not subscription:
+        if current_user.role in (UserRole.admin, UserRole.broker):
+            # Admins/brokers get a synthetic premium subscription
+            now = datetime.utcnow()
+            return SubscriptionWithFeatures(
+                id="admin-premium",
+                user_id=current_user.id,
+                tier=SubscriptionTier.premium,
+                status=SubscriptionStatus.active,
+                current_period_start=now,
+                current_period_end=now.replace(year=now.year + 10),
+                canceled_at=None,
+                cancel_at_period_end=False,
+                created_at=now,
+                updated_at=now,
+                features=TIER_FEATURES[SubscriptionTier.premium],
+                tier_name="Premium (Admin)",
+                can_upgrade=False,
+                can_downgrade=False,
+            )
         return None
 
     tier_pricing = TIER_PRICING[subscription.tier]
@@ -170,20 +190,24 @@ async def upgrade_subscription(
     upgrade_data: SubscriptionUpgrade,
     current_user: User = Depends(get_current_user),
 ):
+    from app.models.user import UserRole
     subscription = await get_user_subscription(current_user.id)
 
     if not subscription:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No subscription found. Please subscribe first.")
 
-    tier_order = [SubscriptionTier.basic, SubscriptionTier.pro, SubscriptionTier.premium]
-    current_idx = tier_order.index(subscription.tier)
-    new_idx = tier_order.index(upgrade_data.tier)
+    is_admin = current_user.role in (UserRole.admin, UserRole.broker)
 
-    if new_idx <= current_idx:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New tier must be higher than current tier. Use downgrade endpoint for lower tiers.",
-        )
+    if not is_admin:
+        tier_order = [SubscriptionTier.basic, SubscriptionTier.pro, SubscriptionTier.premium]
+        current_idx = tier_order.index(subscription.tier)
+        new_idx = tier_order.index(upgrade_data.tier)
+
+        if new_idx <= current_idx:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New tier must be higher than current tier. Use downgrade endpoint for lower tiers.",
+            )
 
     subscription.tier = upgrade_data.tier
     subscription.status = SubscriptionStatus.active

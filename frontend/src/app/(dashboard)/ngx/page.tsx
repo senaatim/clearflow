@@ -9,24 +9,26 @@ import { TrendingUp, TrendingDown, RefreshCw, Lock, BarChart2 } from 'lucide-rea
 import Link from 'next/link';
 
 interface IndexSummary {
-  index: { name: string; value: number; change: number; change_pct: number; ytd_change_pct: number };
-  market_cap_trn: number; volume_bn_units: number; value_traded_bn_ngn: number; deals: number;
+  index: { name: string; value: number; change: number; changePct: number; ytdChangePct: number };
+  marketCapTrn: number; volumeBnUnits: number; valueTradedBnNgn: number; deals: number;
   advancers: number; decliners: number; unchanged: number;
-  sector_indices: { name: string; value: number; change_pct: number }[];
+  sectorIndices: { name: string; value: number; changePct: number }[];
 }
 
-interface MoverStock { symbol: string; name: string; price: number; change_pct: number; volume?: number }
-interface Movers { top_gainers: MoverStock[]; top_losers: MoverStock[]; most_active: MoverStock[] }
+interface MoverStock { symbol: string; name: string; price: number; changePct: number; volume?: number }
+interface Movers { topGainers: MoverStock[]; topLosers: MoverStock[]; mostActive: MoverStock[] }
 
-function fmt(n: number, dec = 2) {
+function fmt(n: number | undefined | null, dec = 2) {
+  if (n == null || isNaN(n)) return '—';
   return n.toLocaleString('en-NG', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
-function ChangeCell({ pct }: { pct: number }) {
+function ChangeCell({ pct }: { pct: number | undefined | null }) {
+  const val = pct ?? 0;
   return (
-    <span className={`text-sm font-medium flex items-center gap-0.5 ${pct >= 0 ? 'text-success' : 'text-accent-danger'}`}>
-      {pct >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-      {pct >= 0 ? '+' : ''}{fmt(pct)}%
+    <span className={`text-sm font-medium flex items-center gap-0.5 ${val >= 0 ? 'text-success' : 'text-accent-danger'}`}>
+      {val >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+      {val >= 0 ? '+' : ''}{fmt(pct)}%
     </span>
   );
 }
@@ -46,7 +48,7 @@ export default function NgxPage() {
       setSummary(sumRes.data);
       setMovers(movRes.data);
     } catch (err: any) {
-      if (err?.response?.status === 403) setForbidden(true);
+      if (err?.response?.status === 403 || err?.response?.status === 401) setForbidden(true);
     } finally {
       setIsLoading(false);
     }
@@ -95,10 +97,10 @@ export default function NgxPage() {
               <div>
                 <div className="text-sm text-text-muted mb-1">{summary.index.name}</div>
                 <div className="text-4xl font-bold font-mono">{fmt(summary.index.value, 2)}</div>
-                <div className={`flex items-center gap-1 mt-1 text-sm font-medium ${summary.index.change_pct >= 0 ? 'text-success' : 'text-accent-danger'}`}>
-                  {summary.index.change_pct >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                  {summary.index.change_pct >= 0 ? '+' : ''}{fmt(summary.index.change, 2)} ({summary.index.change_pct >= 0 ? '+' : ''}{fmt(summary.index.change_pct)}%)
-                  <span className="text-text-muted font-normal ml-2">YTD: +{fmt(summary.index.ytd_change_pct)}%</span>
+                <div className={`flex items-center gap-1 mt-1 text-sm font-medium ${(summary.index.changePct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
+                  {(summary.index.changePct ?? 0) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                  {(summary.index.changePct ?? 0) >= 0 ? '+' : ''}{fmt(summary.index.change, 2)} ({(summary.index.changePct ?? 0) >= 0 ? '+' : ''}{fmt(summary.index.changePct)}%)
+                  <span className="text-text-muted font-normal ml-2">YTD: +{fmt(summary.index.ytdChangePct)}%</span>
                 </div>
               </div>
               <div className="text-right text-sm text-text-muted">As of 15:30 WAT</div>
@@ -114,11 +116,11 @@ export default function NgxPage() {
                 <div className="text-xs text-text-muted">Decliners</div>
               </div>
               <div className="text-center p-3 bg-background-tertiary rounded-xl">
-                <div className="text-lg font-bold">₦{summary.market_cap_trn.toFixed(1)}T</div>
+                <div className="text-lg font-bold">₦{(summary.marketCapTrn ?? 0).toFixed(1)}T</div>
                 <div className="text-xs text-text-muted">Market Cap</div>
               </div>
               <div className="text-center p-3 bg-background-tertiary rounded-xl">
-                <div className="text-lg font-bold">₦{summary.value_traded_bn_ngn.toFixed(1)}B</div>
+                <div className="text-lg font-bold">₦{(summary.valueTradedBnNgn ?? 0).toFixed(1)}B</div>
                 <div className="text-xs text-text-muted">Value Traded</div>
               </div>
             </div>
@@ -128,12 +130,12 @@ export default function NgxPage() {
           <Card className="mb-5">
             <CardHeader title="Sector Indices" actions={<BarChart2 className="w-4 h-4 text-text-muted" />} />
             <div className="divide-y divide-border">
-              {summary.sector_indices.map((si) => (
+              {(summary.sectorIndices ?? []).map((si) => (
                 <div key={si.name} className="flex items-center justify-between px-4 py-2.5">
                   <span className="text-sm text-text-secondary">{si.name}</span>
                   <div className="flex items-center gap-4">
                     <span className="font-mono text-sm">{fmt(si.value, 2)}</span>
-                    <ChangeCell pct={si.change_pct} />
+                    <ChangeCell pct={si.changePct} />
                   </div>
                 </div>
               ))}
@@ -146,7 +148,7 @@ export default function NgxPage() {
             <Card>
               <CardHeader title="Top Gainers" />
               <div className="divide-y divide-border">
-                {movers.top_gainers.map((s) => (
+                {(movers.topGainers ?? []).map((s) => (
                   <Link key={s.symbol} href={`/health-cards/${s.symbol}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-background-tertiary transition-colors">
                     <div>
                       <div className="font-mono text-sm font-semibold">{s.symbol}</div>
@@ -154,7 +156,7 @@ export default function NgxPage() {
                     </div>
                     <div className="text-right">
                       <div className="font-mono text-sm">₦{s.price.toLocaleString()}</div>
-                      <ChangeCell pct={s.change_pct} />
+                      <ChangeCell pct={s.changePct} />
                     </div>
                   </Link>
                 ))}
@@ -165,7 +167,7 @@ export default function NgxPage() {
             <Card>
               <CardHeader title="Top Losers" />
               <div className="divide-y divide-border">
-                {movers.top_losers.map((s) => (
+                {(movers.topLosers ?? []).map((s) => (
                   <Link key={s.symbol} href={`/health-cards/${s.symbol}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-background-tertiary transition-colors">
                     <div>
                       <div className="font-mono text-sm font-semibold">{s.symbol}</div>
@@ -173,7 +175,7 @@ export default function NgxPage() {
                     </div>
                     <div className="text-right">
                       <div className="font-mono text-sm">₦{s.price.toLocaleString()}</div>
-                      <ChangeCell pct={s.change_pct} />
+                      <ChangeCell pct={s.changePct} />
                     </div>
                   </Link>
                 ))}
@@ -184,7 +186,7 @@ export default function NgxPage() {
             <Card>
               <CardHeader title="Most Active" />
               <div className="divide-y divide-border">
-                {movers.most_active.map((s) => (
+                {(movers.mostActive ?? []).map((s) => (
                   <Link key={s.symbol} href={`/health-cards/${s.symbol}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-background-tertiary transition-colors">
                     <div>
                       <div className="font-mono text-sm font-semibold">{s.symbol}</div>

@@ -11,17 +11,17 @@ import Link from 'next/link';
 
 interface HealthCard {
   symbol: string; name: string; sector: string;
-  price: number; change_pct: number; health_score: number;
-  rating: string; analyst_count: number;
-  revenue_bn: number; revenue_growth: number;
-  profit_margin: number; ebitda_margin: number;
-  pe_ratio: number; pb_ratio: number; ps_ratio: number;
-  debt_to_equity: number; current_ratio: number; quick_ratio: number;
+  price: number; changePct: number; healthScore: number;
+  rating: string; analystCount: number;
+  revenueBn: number; revenueGrowth: number;
+  profitMargin: number; ebitdaMargin: number;
+  peRatio: number; pbRatio: number; psRatio: number;
+  debtToEquity: number; currentRatio: number; quickRatio: number;
   roe: number; roa: number; roce: number;
-  eps: number; eps_growth: number;
-  dividend_yield: number; payout_ratio: number;
-  market_cap_bn: number;
-  '52w_high': number; '52w_low': number;
+  eps: number; epsGrowth: number;
+  dividendYield: number; payoutRatio: number;
+  marketCapBn: number;
+  '52wHigh': number; '52wLow': number;
   strengths: string[]; risks: string[];
   summary: string;
 }
@@ -97,8 +97,8 @@ export default function HealthCardDetailPage() {
     );
   }
 
-  const priceRange52w = card['52w_high'] - card['52w_low'];
-  const pricePct52w = priceRange52w > 0 ? ((card.price - card['52w_low']) / priceRange52w) * 100 : 50;
+  const priceRange52w = (card['52wHigh'] ?? 0) - (card['52wLow'] ?? 0);
+  const pricePct52w = priceRange52w > 0 ? ((card.price - (card['52wLow'] ?? 0)) / priceRange52w) * 100 : 50;
 
   return (
     <>
@@ -118,9 +118,9 @@ export default function HealthCardDetailPage() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <div className="text-3xl font-bold font-mono">₦{card.price.toLocaleString()}</div>
-              <div className={`flex items-center gap-1 mt-1 ${card.change_pct >= 0 ? 'text-success' : 'text-accent-danger'}`}>
-                {card.change_pct >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                <span className="font-medium">{card.change_pct >= 0 ? '+' : ''}{card.change_pct.toFixed(1)}% today</span>
+              <div className={`flex items-center gap-1 mt-1 ${(card.changePct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
+                {(card.changePct ?? 0) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                <span className="font-medium">{(card.changePct ?? 0) >= 0 ? '+' : ''}{(card.changePct ?? 0).toFixed(1)}% today</span>
               </div>
             </div>
             <div className="text-right">
@@ -130,15 +130,15 @@ export default function HealthCardDetailPage() {
                 card.rating === 'Hold' ? 'text-warning bg-warning/10' :
                 'text-accent-danger bg-accent-danger/10'
               }`}>{card.rating}</span>
-              <div className="text-xs text-text-muted mt-1">{card.analyst_count} analysts</div>
+              <div className="text-xs text-text-muted mt-1">{card.analystCount} analysts</div>
             </div>
           </div>
 
           {/* 52-week range */}
           <div className="mb-4">
             <div className="flex items-center justify-between text-xs text-text-muted mb-1">
-              <span>52W Low: ₦{card['52w_low'].toLocaleString()}</span>
-              <span>52W High: ₦{card['52w_high'].toLocaleString()}</span>
+              <span>52W Low: ₦{(card['52wLow'] ?? 0).toLocaleString()}</span>
+              <span>52W High: ₦{(card['52wHigh'] ?? 0).toLocaleString()}</span>
             </div>
             <div className="relative h-1.5 bg-background-tertiary rounded-full">
               <div className="absolute h-1.5 rounded-full bg-gradient-to-r from-accent-danger via-warning to-success" style={{ width: '100%' }} />
@@ -154,12 +154,12 @@ export default function HealthCardDetailPage() {
 
         <Card className="p-5">
           <div className="text-sm font-medium mb-3">Health Score</div>
-          <HealthBar score={card.health_score} />
+          <HealthBar score={card.healthScore ?? 0} />
           <div className="mt-4 space-y-2 text-xs text-text-muted">
-            <div className="flex justify-between"><span>Market Cap</span><span className="font-mono text-text-primary">₦{card.market_cap_bn.toLocaleString()}B</span></div>
-            <div className="flex justify-between"><span>Revenue</span><span className="font-mono text-text-primary">₦{card.revenue_bn.toFixed(1)}B</span></div>
-            <div className="flex justify-between"><span>Revenue Growth</span><span className="font-mono text-success">+{card.revenue_growth}%</span></div>
-            <div className="flex justify-between"><span>Dividend Yield</span><span className="font-mono text-text-primary">{card.dividend_yield}%</span></div>
+            <div className="flex justify-between"><span>Market Cap</span><span className="font-mono text-text-primary">₦{(card.marketCapBn ?? 0).toLocaleString()}B</span></div>
+            <div className="flex justify-between"><span>Revenue</span><span className="font-mono text-text-primary">₦{(card.revenueBn ?? 0).toFixed(1)}B</span></div>
+            <div className="flex justify-between"><span>Revenue Growth</span><span className="font-mono text-success">+{card.revenueGrowth ?? 0}%</span></div>
+            <div className="flex justify-between"><span>Dividend Yield</span><span className="font-mono text-text-primary">{card.dividendYield ?? 0}%</span></div>
           </div>
         </Card>
       </div>
@@ -168,12 +168,12 @@ export default function HealthCardDetailPage() {
       <Card className="mb-5">
         <CardHeader title="Valuation" />
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3 p-4 pt-0">
-          <Metric label="P/E Ratio" value={`${card.pe_ratio}x`} />
-          <Metric label="P/B Ratio" value={`${card.pb_ratio}x`} />
-          <Metric label="P/S Ratio" value={`${card.ps_ratio}x`} />
-          <Metric label="EPS" value={`₦${card.eps.toFixed(2)}`} sub={`+${card.eps_growth}% growth`} />
-          <Metric label="Dividend Yield" value={`${card.dividend_yield}%`} sub={`${card.payout_ratio}% payout`} />
-          <Metric label="Market Cap" value={`₦${card.market_cap_bn.toLocaleString()}B`} />
+          <Metric label="P/E Ratio" value={`${card.peRatio ?? '—'}x`} />
+          <Metric label="P/B Ratio" value={`${card.pbRatio ?? '—'}x`} />
+          <Metric label="P/S Ratio" value={`${card.psRatio ?? '—'}x`} />
+          <Metric label="EPS" value={`₦${(card.eps ?? 0).toFixed(2)}`} sub={`+${card.epsGrowth ?? 0}% growth`} />
+          <Metric label="Dividend Yield" value={`${card.dividendYield ?? 0}%`} sub={`${card.payoutRatio ?? 0}% payout`} />
+          <Metric label="Market Cap" value={`₦${(card.marketCapBn ?? 0).toLocaleString()}B`} />
         </div>
       </Card>
 
@@ -181,12 +181,12 @@ export default function HealthCardDetailPage() {
       <Card className="mb-5">
         <CardHeader title="Profitability" />
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3 p-4 pt-0">
-          <Metric label="Profit Margin" value={`${card.profit_margin}%`} />
-          <Metric label="EBITDA Margin" value={`${card.ebitda_margin}%`} />
-          <Metric label="ROE" value={`${card.roe}%`} />
-          <Metric label="ROA" value={`${card.roa}%`} />
-          <Metric label="ROCE" value={`${card.roce}%`} />
-          <Metric label="Revenue" value={`₦${card.revenue_bn.toFixed(1)}B`} sub={`+${card.revenue_growth}% YoY`} />
+          <Metric label="Profit Margin" value={`${card.profitMargin ?? 0}%`} />
+          <Metric label="EBITDA Margin" value={`${card.ebitdaMargin ?? 0}%`} />
+          <Metric label="ROE" value={`${card.roe ?? 0}%`} />
+          <Metric label="ROA" value={`${card.roa ?? 0}%`} />
+          <Metric label="ROCE" value={`${card.roce ?? 0}%`} />
+          <Metric label="Revenue" value={`₦${(card.revenueBn ?? 0).toFixed(1)}B`} sub={`+${card.revenueGrowth ?? 0}% YoY`} />
         </div>
       </Card>
 
@@ -194,9 +194,9 @@ export default function HealthCardDetailPage() {
       <Card className="mb-5">
         <CardHeader title="Financial Health" />
         <div className="grid grid-cols-3 gap-3 p-4 pt-0">
-          <Metric label="Debt / Equity" value={`${card.debt_to_equity}x`} sub={card.debt_to_equity < 1 ? 'Low leverage' : card.debt_to_equity < 2 ? 'Moderate' : 'High leverage'} />
-          <Metric label="Current Ratio" value={`${card.current_ratio}x`} sub={card.current_ratio >= 1.5 ? 'Healthy' : 'Monitor closely'} />
-          <Metric label="Quick Ratio" value={`${card.quick_ratio}x`} />
+          <Metric label="Debt / Equity" value={`${card.debtToEquity ?? 0}x`} sub={(card.debtToEquity ?? 0) < 1 ? 'Low leverage' : (card.debtToEquity ?? 0) < 2 ? 'Moderate' : 'High leverage'} />
+          <Metric label="Current Ratio" value={`${card.currentRatio ?? 0}x`} sub={(card.currentRatio ?? 0) >= 1.5 ? 'Healthy' : 'Monitor closely'} />
+          <Metric label="Quick Ratio" value={`${card.quickRatio ?? 0}x`} />
         </div>
       </Card>
 
