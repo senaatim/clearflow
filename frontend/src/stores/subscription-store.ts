@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SubscriptionTier, SubscriptionStatus, SubscriptionWithFeatures } from '@/types';
+import { useAuthStore } from '@/stores/auth-store';
+
+function isAdmin(): boolean {
+  return useAuthStore.getState().user?.role === 'admin';
+}
 
 // Feature definitions by tier — must stay in sync with backend TIER_FEATURES
 export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
@@ -119,6 +124,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       setError: (error) => set({ error }),
 
       isActive: () => {
+        if (isAdmin()) return true;
+
         const { status, subscription } = get();
         if (!status || !subscription) return false;
         if (status !== 'active') return false;
@@ -129,6 +136,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       canAccess: (feature) => {
+        if (isAdmin()) return true;
+
         const { tier, status, subscription } = get();
 
         // No subscription — treat as free tier for free features
