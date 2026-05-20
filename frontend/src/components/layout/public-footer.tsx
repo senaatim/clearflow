@@ -9,19 +9,20 @@ export function PublicFooter() {
 
   const footerLinks = {
     product: [
-      { href: '/#features', label: 'Features' },
-      { href: '/#pricing', label: 'Pricing' },
-      { href: '/#how-it-works', label: 'How It Works' },
+      { href: '/features', label: 'Features' },
+      { href: '/how-it-works', label: 'How It Works' },
+      { href: '/pricing', label: 'Pricing' },
+      { href: '/blog', label: 'Insights' },
     ],
     company: [
       { href: '/about', label: 'About Us' },
       { href: '/contact', label: 'Contact' },
-      { href: '/careers', label: 'Careers' },
     ],
     legal: [
       { href: '/privacy', label: 'Privacy Policy' },
       { href: '/terms', label: 'Terms of Service' },
       { href: '/risk-disclosure', label: 'Risk Disclosure' },
+      { href: '/cookie-policy', label: 'Cookie Policy' },
     ],
   };
 

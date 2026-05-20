@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import type { SubscriptionTier, SubscriptionStatus, SubscriptionWithFeatures } from '@/types';
 import { useAuthStore } from '@/stores/auth-store';
 
+// Set to false to bypass all subscription checks (e.g. during development/testing)
+const SUBSCRIPTIONS_ENABLED = true;
+
 function isAdmin(): boolean {
   return useAuthStore.getState().user?.role === 'admin';
 }
@@ -124,6 +127,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       setError: (error) => set({ error }),
 
       isActive: () => {
+        if (!SUBSCRIPTIONS_ENABLED) return true;
         if (isAdmin()) return true;
 
         const { status, subscription } = get();
@@ -136,6 +140,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       },
 
       canAccess: (feature) => {
+        if (!SUBSCRIPTIONS_ENABLED) return true;
         if (isAdmin()) return true;
 
         const { tier, status, subscription } = get();

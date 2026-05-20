@@ -506,6 +506,33 @@ export const adminApi = {
     apiClient.get('/admin/transactions', { params }),
 };
 
+// Support / Messaging API
+export const supportApi = {
+  // User: send a message to admin
+  sendMessage: (content: string) =>
+    apiClient.post('/support/messages', { content }),
+
+  // User: get their own conversation history with admin
+  getMyMessages: () =>
+    apiClient.get('/support/messages'),
+
+  // Admin: list all user conversations (latest message per user)
+  getConversations: (params?: { search?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/admin/support/conversations', { params }),
+
+  // Admin: get full conversation with a specific user
+  getConversation: (userId: string) =>
+    apiClient.get(`/admin/support/conversations/${userId}`),
+
+  // Admin: reply to a user
+  replyToUser: (userId: string, content: string) =>
+    apiClient.post('/admin/support/reply', { userId, content }),
+
+  // Admin: mark conversation as read
+  markRead: (userId: string) =>
+    apiClient.post(`/admin/support/conversations/${userId}/read`),
+};
+
 // Screener API
 export const screenerApi = {
   getStocks: (params?: { sector?: string; minPe?: number; maxPe?: number; minHealth?: number; minDividend?: number; minRevenueGrowth?: number; sortBy?: string; limit?: number }) =>

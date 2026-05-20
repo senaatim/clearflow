@@ -8,7 +8,6 @@ import {
   PieChart,
   LineChart,
   ArrowRightLeft,
-  PlusCircle,
   Brain,
   FileText,
   User,
@@ -19,7 +18,6 @@ import {
   LogOut,
   Menu,
   X,
-  Briefcase,
   CreditCard,
   Sparkles,
   Newspaper,
@@ -27,6 +25,7 @@ import {
   HeartPulse,
   TrendingUp,
   Lock,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
@@ -42,8 +41,6 @@ const mainNavItems = [
 
 const tradingNavItems = [
   { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
-  { href: '/trades', label: 'Trade Requests', icon: Briefcase, requireFeature: Features.BROKER_EXECUTION },
-  { href: '/add-funds', label: 'Add Funds', icon: PlusCircle },
 ];
 
 const marketsNavItems = [
@@ -65,6 +62,7 @@ const insightsNavItems = [
 const accountNavItems = [
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/subscription', label: 'Subscription', icon: CreditCard },
+  { href: '/support', label: 'Support', icon: MessageCircle },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

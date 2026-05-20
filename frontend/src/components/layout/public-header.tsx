@@ -14,9 +14,11 @@ export function PublicHeader({ transparent = false }: PublicHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: '/#features', label: 'Features' },
-    { href: '/#pricing', label: 'Pricing' },
-    { href: '/#how-it-works', label: 'How It Works' },
+    { href: '/features', label: 'Features' },
+    { href: '/how-it-works', label: 'How It Works' },
+    { href: '/pricing', label: 'Pricing' },
+    { href: '/about', label: 'About Us' },
+    { href: '/contact', label: 'Contact' },
   ];
 
   return (

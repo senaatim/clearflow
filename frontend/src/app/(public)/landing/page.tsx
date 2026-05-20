@@ -24,53 +24,53 @@ import type { TierInfo, SubscriptionTier } from '@/types';
 const TIERS: TierInfo[] = [
   {
     tier: 'basic',
-    name: 'Basic',
-    description: 'Essential tools for getting started with smart investing',
-    monthlyPrice: 9.99,
-    yearlyPrice: 99.0,
+    name: 'Free',
+    description: 'News feed, basic screener & Company Health Cards',
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     popular: false,
     features: [
-      { name: 'Portfolio Tracking', description: '', included: true },
-      { name: 'AI Recommendations', description: '', included: true },
-      { name: 'Basic Analytics', description: '', included: true },
-      { name: 'Market Summaries', description: '', included: true },
-      { name: 'Advanced Analytics', description: '', included: false },
-      { name: 'Tax Optimization', description: '', included: false },
-      { name: 'Broker Execution', description: '', included: false },
+      { name: 'News Intelligence Feed', description: '', included: true },
+      { name: 'Basic Stock Screener', description: '', included: true },
+      { name: 'Company Health Cards', description: '', included: true },
+      { name: 'Full Stock Screener', description: '', included: false },
+      { name: 'Portfolio Builder', description: '', included: false },
+      { name: 'AI Recommendations', description: '', included: false },
+      { name: 'Broker-Assisted Trading', description: '', included: false },
     ],
   },
   {
     tier: 'pro',
-    name: 'Pro',
-    description: 'Advanced analytics and tax optimization for serious investors',
-    monthlyPrice: 29.99,
-    yearlyPrice: 299.0,
+    name: 'ClearFlow Pro',
+    description: 'Full screener, Portfolio Builder, Earnings Decoder & NGX module',
+    monthlyPrice: 10000,
+    yearlyPrice: 96000,
     popular: true,
     features: [
-      { name: 'Portfolio Tracking', description: '', included: true },
+      { name: 'News Intelligence Feed', description: '', included: true },
+      { name: 'Basic Stock Screener', description: '', included: true },
+      { name: 'Company Health Cards', description: '', included: true },
+      { name: 'Full Stock Screener', description: '', included: true },
+      { name: 'Portfolio Builder', description: '', included: true },
       { name: 'AI Recommendations', description: '', included: true },
-      { name: 'Basic Analytics', description: '', included: true },
-      { name: 'Market Summaries', description: '', included: true },
-      { name: 'Advanced Analytics', description: '', included: true },
-      { name: 'Tax Optimization', description: '', included: true },
-      { name: 'Broker Execution', description: '', included: false },
+      { name: 'Broker-Assisted Trading', description: '', included: false },
     ],
   },
   {
     tier: 'premium',
-    name: 'Premium',
-    description: 'Full-service investment intelligence with broker execution',
-    monthlyPrice: 79.99,
-    yearlyPrice: 799.0,
+    name: 'ClearFlow Premium',
+    description: 'DCF models, Macro Dashboard & full Portfolio Analytics',
+    monthlyPrice: 20000,
+    yearlyPrice: 192000,
     popular: false,
     features: [
-      { name: 'Portfolio Tracking', description: '', included: true },
+      { name: 'News Intelligence Feed', description: '', included: true },
+      { name: 'Basic Stock Screener', description: '', included: true },
+      { name: 'Company Health Cards', description: '', included: true },
+      { name: 'Full Stock Screener', description: '', included: true },
+      { name: 'Portfolio Builder', description: '', included: true },
       { name: 'AI Recommendations', description: '', included: true },
-      { name: 'Basic Analytics', description: '', included: true },
-      { name: 'Market Summaries', description: '', included: true },
-      { name: 'Advanced Analytics', description: '', included: true },
-      { name: 'Tax Optimization', description: '', included: true },
-      { name: 'Broker Execution', description: '', included: true },
+      { name: 'Broker-Assisted Trading', description: '', included: true },
     ],
   },
 ];
@@ -180,7 +180,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/register">
                 <Button variant="primary" size="lg" className="w-full sm:w-auto">
-                  Start Free Trial
+                  Get Started
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
@@ -287,8 +287,7 @@ export default function LandingPage() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-lg text-text-secondary max-w-2xl mx-auto">
-              Choose the plan that fits your investment journey. All plans include a 14-day free
-              trial.
+              Choose the plan that fits your investment journey.
             </p>
           </div>
 
@@ -320,16 +319,15 @@ export default function LandingPage() {
             </h2>
             <p className="text-lg text-text-secondary mb-8 max-w-2xl mx-auto">
               Join thousands of investors who use ClearFlow to make informed investment decisions.
-              Start your free trial today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/register">
                 <Button variant="primary" size="lg">
-                  Start Your Free Trial
+                  Get Started
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
-              <Link href="/#pricing">
+              <Link href="/pricing">
                 <Button variant="secondary" size="lg">
                   View Pricing
                 </Button>

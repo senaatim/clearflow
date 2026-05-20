@@ -6,8 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
-  DollarSign,
-  Briefcase,
+  CreditCard,
   PieChart,
   ArrowRightLeft,
   Menu,
@@ -15,6 +14,7 @@ import {
   LogOut,
   ArrowLeft,
   Shield,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
@@ -25,8 +25,8 @@ const overviewItems = [
 ];
 
 const operationsItems = [
-  { href: '/admin/fund-requests', label: 'Fund Requests', icon: DollarSign },
-  { href: '/admin/trades', label: 'Trade Requests', icon: Briefcase },
+  { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/admin/fund-requests', label: 'Payment Verifications', icon: CreditCard },
 ];
 
 const dataItems = [

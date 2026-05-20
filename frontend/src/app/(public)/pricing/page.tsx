@@ -23,20 +23,20 @@ const FEATURE_COMPARISON = [
   { feature: 'Full Portfolio Analytics',basic: false, pro: false, premium: true },
   { feature: 'Priority Alerts',        basic: false, pro: false, premium: true  },
   { feature: 'Tax Optimization',       basic: false, pro: false, premium: true  },
-  { feature: 'Broker-Assisted Trading',basic: false, pro: false, premium: true  },
+  { feature: 'Expert Trade Signal Alerts',basic: false, pro: false, premium: true  },
   { feature: 'Priority Support',       basic: false, pro: false, premium: true  },
 ];
 
 const FAQ = [
   {
-    question: 'What is included in the free trial?',
+    question: 'Can I cancel my subscription?',
     answer:
-      'The 14-day free trial gives you full access to all features of your selected plan. No credit card is required to start, and you can cancel anytime.',
+      'Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period.',
   },
   {
-    question: 'How does broker-assisted execution work?',
+    question: 'Does ClearFlow execute trades or hold my money?',
     answer:
-      'When you request a trade, our licensed broker partners review and execute the trade on your behalf. You always stay in control - no automatic trading happens without your approval.',
+      'No. ClearFlow is a pure intelligence platform — we do not execute trades, hold funds, or manage your portfolio. All investment decisions and executions are made by you through your own broker or brokerage account. We provide the data, analysis, and signals to help you decide.',
   },
   {
     question: 'Can I change my plan later?',

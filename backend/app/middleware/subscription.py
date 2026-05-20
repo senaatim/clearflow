@@ -5,6 +5,9 @@ from app.models.user import User, UserRole
 from app.models.subscription import Subscription, SubscriptionTier, SubscriptionStatus, tier_has_feature
 from app.api.deps import get_current_user
 
+# Set to False to bypass all subscription checks (e.g. during development/testing)
+SUBSCRIPTIONS_ENABLED = False
+
 
 async def get_user_subscription(user_id: str) -> Subscription | None:
     return await Subscription.find_one(Subscription.user_id == user_id)
@@ -13,6 +16,9 @@ async def get_user_subscription(user_id: str) -> Subscription | None:
 async def require_active_subscription(
     current_user: User = Depends(get_current_user),
 ) -> User:
+    if not SUBSCRIPTIONS_ENABLED:
+        return current_user
+
     if current_user.role == UserRole.admin:
         return current_user
 
@@ -43,6 +49,9 @@ def require_subscription(feature: str):
     async def check_subscription(
         current_user: User = Depends(get_current_user),
     ) -> User:
+        if not SUBSCRIPTIONS_ENABLED:
+            return current_user
+
         if current_user.role == UserRole.admin:
             return current_user
 

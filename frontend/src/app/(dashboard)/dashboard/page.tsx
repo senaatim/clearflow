@@ -87,6 +87,27 @@ export default function DashboardPage() {
   const returnPercentage = totalValue > 0 ? ((totalReturns / (totalValue - totalReturns)) * 100) : 0;
   const primaryPortfolio = portfolios[0];
 
+  const handleExport = () => {
+    const headers = ['Name', 'Type', 'Currency', 'Total Value', 'Total Return', 'Return %', 'Created At'];
+    const rows = portfolios.map(p => [
+      p.name,
+      p.type,
+      p.currency,
+      (p.totalValue ?? 0).toFixed(2),
+      (p.totalReturn ?? 0).toFixed(2),
+      (p.returnPercentage ?? 0).toFixed(2) + '%',
+      new Date(p.createdAt).toLocaleDateString(),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clearflow-portfolios-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <Header
@@ -94,7 +115,7 @@ export default function DashboardPage() {
         subtitle={`${portfolios.length} portfolio${portfolios.length !== 1 ? 's' : ''} tracked`}
         actions={
           <>
-            <Button variant="secondary">
+            <Button variant="secondary" onClick={handleExport}>
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Export</span>
             </Button>

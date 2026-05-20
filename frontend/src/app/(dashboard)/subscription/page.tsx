@@ -1,6 +1,10 @@
 'use client';
 
+// Set to false to disable the subscription page (redirects to dashboard)
+const SUBSCRIPTION_PAGE_ENABLED = true;
+
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +27,7 @@ import { cn } from '@/lib/utils';
 import type { TierInfo, SubscriptionTier, SubscriptionInvoice } from '@/types';
 
 export default function SubscriptionPage() {
+  const router = useRouter();
   const { subscription, tier, status, setSubscription } = useSubscriptionStore();
   const [tiers, setTiers] = useState<TierInfo[]>([]);
   const [invoices, setInvoices] = useState<SubscriptionInvoice[]>([]);
@@ -32,6 +37,10 @@ export default function SubscriptionPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!SUBSCRIPTION_PAGE_ENABLED) {
+      router.replace('/dashboard');
+      return;
+    }
     loadData();
   }, []);
 
