@@ -14,6 +14,7 @@ import {
   AlertCircle,
   CheckCheck,
   RefreshCw,
+  ArrowLeft,
 } from 'lucide-react';
 import { supportApi, handleApiError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
@@ -103,6 +104,7 @@ export default function AdminMessagesPage() {
   const [messagesError, setMessagesError] = useState('');
   const [sendError, setSendError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [showThread, setShowThread] = useState(false);
 
   const loadConversations = async () => {
     try {
@@ -179,6 +181,7 @@ export default function AdminMessagesPage() {
     setSelectedUserId(userId);
     setMessages([]);
     setSendError('');
+    setShowThread(true);
   };
 
   const handleSend = async () => {
@@ -232,7 +235,10 @@ export default function AdminMessagesPage() {
       <div className="flex-1 flex gap-4 overflow-hidden mt-4">
 
         {/* Conversations list */}
-        <Card className="w-80 shrink-0 flex flex-col overflow-hidden">
+        <Card className={cn(
+          'flex flex-col overflow-hidden w-full lg:w-80 lg:flex-shrink-0',
+          showThread ? 'hidden lg:flex' : 'flex'
+        )}>
           {/* Search */}
           <div className="p-3 border-b border-border">
             <div className="relative">
@@ -319,7 +325,10 @@ export default function AdminMessagesPage() {
         </Card>
 
         {/* Conversation thread */}
-        <Card className="flex-1 flex flex-col overflow-hidden">
+        <Card className={cn(
+          'flex-1 flex flex-col overflow-hidden',
+          !showThread ? 'hidden lg:flex' : 'flex'
+        )}>
           {!selectedUserId ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
               <div className="w-16 h-16 rounded-full bg-background-tertiary flex items-center justify-center">
@@ -334,6 +343,13 @@ export default function AdminMessagesPage() {
             <>
               {/* Thread header */}
               <div className="p-4 border-b border-border flex items-center gap-3">
+                <button
+                  onClick={() => setShowThread(false)}
+                  className="lg:hidden p-1 -ml-1 mr-1 text-text-muted hover:text-text-primary transition-colors"
+                  aria-label="Back to conversations"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
                 <div className="w-9 h-9 rounded-full bg-accent-primary/20 flex items-center justify-center text-accent-primary text-sm font-bold">
                   {selectedConversation ? getInitials(selectedConversation.userName) : <User className="w-4 h-4" />}
                 </div>

@@ -28,6 +28,7 @@ async def init_db():
     from app.models.trade_request import TradeRequest
     from app.models.fund_request import FundRequest
     from app.models.chat_conversation import ChatConversation
+    from app.models.support_message import SupportMessage
 
     client = get_client()
     db = client[settings.mongodb_db_name]
@@ -63,5 +64,6 @@ async def init_db():
             TradeRequest,
             FundRequest,
             ChatConversation,
+            SupportMessage,
         ],
     )

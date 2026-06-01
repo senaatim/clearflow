@@ -274,6 +274,54 @@ async def list_assets(
     ]
 
 
+@router.get("/{portfolio_id}/transactions")
+async def list_transactions(
+    portfolio_id: str,
+    limit: int = 20,
+    offset: int = 0,
+    current_user: User = Depends(_portfolio_access),
+):
+    from app.models.transaction import Transaction
+
+    portfolio = await Portfolio.find_one(
+        Portfolio.id == portfolio_id,
+        Portfolio.user_id == current_user.id,
+    )
+
+    if not portfolio:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
+
+    total = await Transaction.find(Transaction.portfolio_id == portfolio_id).count()
+    txns = (
+        await Transaction.find(Transaction.portfolio_id == portfolio_id)
+        .sort(-Transaction.executed_at)
+        .skip(offset)
+        .limit(limit)
+        .to_list()
+    )
+
+    return {
+        "transactions": [
+            {
+                "id": t.id,
+                "portfolio_id": t.portfolio_id,
+                "asset_id": t.asset_id,
+                "type": t.type.value,
+                "symbol": t.symbol,
+                "quantity": t.quantity,
+                "price": t.price,
+                "total_amount": t.total_amount,
+                "fees": t.fees,
+                "notes": t.notes,
+                "executed_at": t.executed_at.isoformat(),
+                "created_at": t.created_at.isoformat(),
+            }
+            for t in txns
+        ],
+        "total_count": total,
+    }
+
+
 @router.post("/{portfolio_id}/assets", response_model=AssetResponse, status_code=status.HTTP_201_CREATED)
 async def add_asset(
     portfolio_id: str,

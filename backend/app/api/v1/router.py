@@ -4,6 +4,7 @@ from app.api.v1 import (
     subscriptions, payments, trades, ai, funds, admin,
     screener, health_cards, news, ngx, reports, automation,
 )
+from app.api.v1.support import user_router as support_user_router, admin_router as support_admin_router
 
 api_router = APIRouter()
 
@@ -26,3 +27,5 @@ api_router.include_router(news.router, prefix="/news", tags=["News"])
 api_router.include_router(ngx.router, prefix="/ngx", tags=["NGX Module"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
 api_router.include_router(automation.router, prefix="/automation", tags=["Automation"])
+api_router.include_router(support_user_router, prefix="/support", tags=["Support"])
+api_router.include_router(support_admin_router, prefix="/admin/support", tags=["Admin Support"])

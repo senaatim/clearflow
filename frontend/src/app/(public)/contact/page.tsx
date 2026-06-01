@@ -8,14 +8,14 @@ const CONTACT_INFO = [
   {
     icon: Mail,
     label: 'Email',
-    value: 'support@clearflow.ng',
+    value: 'Clearflowanalytics@gmail.com',
     sub: 'We respond within 24 hours',
   },
   {
     icon: MapPin,
     label: 'Office',
-    value: 'Lagos, Nigeria',
-    sub: 'Victoria Island',
+    value: 'Rayfield, Jos',
+    sub: 'Road A Da Chibi Rwang Street',
   },
   {
     icon: Clock,
