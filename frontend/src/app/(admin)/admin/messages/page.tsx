@@ -299,7 +299,7 @@ export default function AdminMessagesPage() {
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-[10px] text-text-muted truncate">{conv.userEmail}</span>
                         {conv.unreadCount > 0 && (
-                          <Badge variant="success" className="text-[10px] px-1.5 py-0.5 min-w-[18px] flex items-center justify-center">
+                          <Badge variant="positive" className="text-[10px] px-1.5 py-0.5 min-w-[18px] flex items-center justify-center">
                             {conv.unreadCount}
                           </Badge>
                         )}
