@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, Plus, FolderPlus } from 'lucide-react';
+import { Download, Plus, FolderPlus, ExternalLink } from 'lucide-react';
 import { Header, Button } from '@/components/layout/header';
 import { StatCard } from '@/components/ui/stat-card';
 import { PerformanceChart } from '@/components/dashboard/performance-chart';
@@ -12,6 +12,134 @@ import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { portfolioApi } from '@/lib/api-client';
 import type { Portfolio } from '@/types';
+
+interface Broker {
+  name: string;
+  tagline: string;
+  description: string;
+  color: string;
+  url?: string;
+  referralCode?: string;
+  androidUrl?: string;
+  iosUrl?: string;
+}
+
+const BROKERS: Broker[] = [
+  {
+    name: 'Bamboo',
+    tagline: 'Join Bamboo and start your journey to the life of your dreams.',
+    description: 'Invest in the US and Nigerian stock market and explore other investment options.',
+    color: '#00C875',
+    referralCode: 'john894183',
+    androidUrl: 'https://play.google.com/store/apps/details?id=com.invest.bamboo&referrer=john894183',
+    iosUrl: 'https://apps.apple.com/app/id1474833078',
+  },
+  {
+    name: 'Cowrywise',
+    tagline: 'Grow your wealth consistently.',
+    description: 'Savings, mutual funds & more.',
+    color: '#29ABE2',
+    url: 'https://cowrywise.com',
+  },
+  {
+    name: 'Sycamore',
+    tagline: 'Invest smart, grow faster.',
+    description: 'Smart investing for Nigerians.',
+    color: '#9B59B6',
+    url: 'https://sycamore.ng',
+  },
+  {
+    name: 'Afrivest',
+    tagline: 'Your trusted stockbroker.',
+    description: 'Full-service stockbroking & research.',
+    color: '#FFBB00',
+    url: 'https://afrivest.net',
+  },
+];
+
+function BrokerCard({ broker }: { broker: Broker }) {
+  const hasPlatformLinks = broker.androidUrl || broker.iosUrl;
+
+  return (
+    <div className="flex flex-col gap-3 p-4 bg-background-tertiary rounded-xl border border-border hover:border-accent-primary/40 transition-all duration-200">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold text-white"
+          style={{ backgroundColor: broker.color }}
+        >
+          {broker.name[0]}
+        </div>
+        <span className="text-xs font-semibold" style={{ color: broker.color }}>{broker.name}</span>
+      </div>
+
+      {/* Text */}
+      <div>
+        <p className="text-xs font-medium text-text-primary leading-snug">{broker.tagline}</p>
+        <p className="text-xs text-text-muted mt-1 leading-snug">{broker.description}</p>
+      </div>
+
+      {/* Referral code */}
+      {broker.referralCode && (
+        <div className="flex items-center gap-2 px-2 py-1.5 bg-background-primary rounded-lg border border-border">
+          <span className="text-xs text-text-muted">Code:</span>
+          <span className="text-xs font-mono font-bold text-accent-primary">{broker.referralCode}</span>
+        </div>
+      )}
+
+      {/* CTA links */}
+      {hasPlatformLinks ? (
+        <div className="flex gap-2 mt-auto">
+          {broker.androidUrl && (
+            <a
+              href={broker.androidUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium bg-background-primary border border-border hover:border-accent-primary text-text-secondary hover:text-accent-primary transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" /> Android
+            </a>
+          )}
+          {broker.iosUrl && (
+            <a
+              href={broker.iosUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium bg-background-primary border border-border hover:border-accent-primary text-text-secondary hover:text-accent-primary transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" /> iOS
+            </a>
+          )}
+        </div>
+      ) : broker.url ? (
+        <a
+          href={broker.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-auto flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-background-primary border border-border hover:border-accent-primary text-text-secondary hover:text-accent-primary transition-colors"
+        >
+          <ExternalLink className="w-3 h-3" /> Visit Website
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+function BrokerPanel() {
+  return (
+    <Card className="mt-6 md:mt-8 p-5">
+      <div className="mb-4">
+        <div className="text-sm font-semibold">Recommended Brokers</div>
+        <div className="text-xs text-text-muted mt-0.5">Open an account and start investing today</div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {BROKERS.map((broker) => (
+          <BrokerCard key={broker.name} broker={broker} />
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 export default function DashboardPage() {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -77,6 +205,7 @@ export default function DashboardPage() {
             </Button>
           </Card>
         </div>
+        <BrokerPanel />
       </>
     );
   }
@@ -182,6 +311,8 @@ export default function DashboardPage() {
           <ActivityFeed portfolioId={primaryPortfolio.id} />
         </div>
       </div>
+
+      <BrokerPanel />
     </>
   );
 }

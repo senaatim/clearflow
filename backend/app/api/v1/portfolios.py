@@ -215,23 +215,59 @@ async def get_performance(
     if not portfolio:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
 
-    import random
+    from app.models.transaction import Transaction
     from datetime import timedelta
 
-    months = {"1m": 1, "3m": 3, "6m": 6, "1y": 12, "all": 24}.get(period.lower(), 12)
-    base_value = 220000
-    data = []
+    assets = await Asset.find(Asset.portfolio_id == portfolio_id).to_list()
+    if not assets:
+        return []
 
-    for i in range(months):
-        date = datetime.now() - timedelta(days=(months - i) * 30)
-        growth = 1 + (random.uniform(-0.02, 0.04) + 0.01)
-        base_value *= growth
+    # Real values only — no estimation or interpolation
+    total_cost = sum(a.quantity * a.average_cost for a in assets)
+    total_current_value = sum(a.current_value for a in assets)
 
-        data.append(PerformanceData(
-            date=date.strftime("%b %Y"),
-            value=round(base_value, 2),
-            benchmark=round(base_value * random.uniform(0.95, 1.05), 2),
-        ))
+    if total_cost == 0:
+        return []
+
+    # Buy transactions give us real timestamped investment events
+    from app.models.transaction import TransactionType
+    buy_txns = (
+        await Transaction.find(
+            Transaction.portfolio_id == portfolio_id,
+            {"type": {"$in": [TransactionType.buy, TransactionType.deposit]}},
+        )
+        .sort(+Transaction.executed_at)
+        .to_list()
+    )
+
+    now = datetime.utcnow()
+    months_back = {"1m": 1, "3m": 3, "6m": 6, "1y": 12, "all": 60}.get(period.lower(), 12)
+    cutoff = now - timedelta(days=months_back * 30)
+
+    data: list[PerformanceData] = []
+    seen: set[str] = set()
+
+    if buy_txns:
+        # Build real cumulative-cost data points from transaction history
+        running_cost = 0.0
+        for t in buy_txns:
+            running_cost += t.total_amount
+            if t.executed_at < cutoff:
+                continue
+            label = t.executed_at.strftime("%d %b %Y")
+            if label in seen:
+                label = t.executed_at.strftime("%d %b %Y %H:%M")
+            seen.add(label)
+            data.append(PerformanceData(date=label, value=round(running_cost, 2), benchmark=None))
+    else:
+        # No transactions recorded — anchor to portfolio creation date with cost basis
+        label = portfolio.created_at.strftime("%d %b %Y")
+        data.append(PerformanceData(date=label, value=round(total_cost, 2), benchmark=None))
+
+    # Always add today's actual current value as the final point
+    today_label = now.strftime("%d %b %Y")
+    if today_label not in seen:
+        data.append(PerformanceData(date=today_label, value=round(total_current_value, 2), benchmark=None))
 
     return data
 

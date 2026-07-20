@@ -9,10 +9,13 @@ import { TrendingUp, TrendingDown, RefreshCw, Lock, BarChart2 } from 'lucide-rea
 import Link from 'next/link';
 
 interface IndexSummary {
-  index: { name: string; value: number; change: number; changePct: number; ytdChangePct: number };
-  marketCapTrn: number; volumeBnUnits: number; valueTradedBnNgn: number; deals: number;
-  advancers: number; decliners: number; unchanged: number;
-  sectorIndices: { name: string; value: number; changePct: number }[];
+  index: { name: string; value: number; change: number; changePct: number; ytdChangePct: number | null };
+  marketCapTrn: number | null;
+  volumeTotal: number | null;
+  advancers: number;
+  decliners: number;
+  unchanged: number;
+  sectorIndices: { name: string; changePct: number }[];
 }
 
 interface MoverStock { symbol: string; name: string; price: number; changePct: number; volume?: number }
@@ -23,12 +26,19 @@ function fmt(n: number | undefined | null, dec = 2) {
   return n.toLocaleString('en-NG', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
+function fmtVolume(v: number | undefined | null): string {
+  if (v == null) return '—';
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
+  return v.toLocaleString();
+}
+
 function ChangeCell({ pct }: { pct: number | undefined | null }) {
   const val = pct ?? 0;
   return (
     <span className={`text-sm font-medium flex items-center gap-0.5 ${val >= 0 ? 'text-success' : 'text-accent-danger'}`}>
       {val >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-      {val >= 0 ? '+' : ''}{fmt(pct)}%
+      {val >= 0 ? '+' : '-'}{fmt(Math.abs(val))}%
     </span>
   );
 }
@@ -37,18 +47,24 @@ export default function NgxPage() {
   const [summary, setSummary] = useState<IndexSummary | null>(null);
   const [movers, setMovers] = useState<Movers | null>(null);
   const [forbidden, setForbidden] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => { load(); }, []);
 
   const load = async () => {
     setIsLoading(true);
+    setLoadError(false);
     try {
       const [sumRes, movRes] = await Promise.all([ngxApi.getSummary(), ngxApi.getMovers()]);
       setSummary(sumRes.data);
       setMovers(movRes.data);
     } catch (err: any) {
-      if (err?.response?.status === 403 || err?.response?.status === 401) setForbidden(true);
+      if (err?.response?.status === 403 || err?.response?.status === 401) {
+        setForbidden(true);
+      } else {
+        setLoadError(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -89,21 +105,39 @@ export default function NgxPage() {
         <div className="space-y-5">
           {[1, 2, 3].map((i) => <div key={i} className="h-48 bg-background-secondary rounded-xl animate-pulse" />)}
         </div>
+      ) : loadError ? (
+        <Card className="p-10 text-center space-y-4">
+          <p className="text-accent-danger">Failed to load NGX market data. The data source may be temporarily unavailable.</p>
+          <Button variant="secondary" onClick={load}><RefreshCw className="w-4 h-4" /> Retry</Button>
+        </Card>
       ) : summary && movers ? (
         <>
           {/* Market Overview */}
           <Card className="mb-5 p-5">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <div className="text-sm text-text-muted mb-1">{summary.index.name}</div>
-                <div className="text-4xl font-bold font-mono">{fmt(summary.index.value, 2)}</div>
-                <div className={`flex items-center gap-1 mt-1 text-sm font-medium ${(summary.index.changePct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
-                  {(summary.index.changePct ?? 0) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                  {(summary.index.changePct ?? 0) >= 0 ? '+' : ''}{fmt(summary.index.change, 2)} ({(summary.index.changePct ?? 0) >= 0 ? '+' : ''}{fmt(summary.index.changePct)}%)
-                  <span className="text-text-muted font-normal ml-2">YTD: +{fmt(summary.index.ytdChangePct)}%</span>
-                </div>
+                {summary.index ? (
+                  <>
+                    <div className="text-sm text-text-muted mb-1">{summary.index.name}</div>
+                    <div className="text-4xl font-bold font-mono">{fmt(summary.index.value, 2)}</div>
+                    <div className={`flex items-center gap-1 mt-1 text-sm font-medium ${(summary.index.changePct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
+                      {(summary.index.changePct ?? 0) >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                      {(summary.index.changePct ?? 0) >= 0 ? '+' : '-'}{fmt(Math.abs(summary.index.change), 2)} ({(summary.index.changePct ?? 0) >= 0 ? '+' : '-'}{fmt(Math.abs(summary.index.changePct ?? 0))}%)
+                      {summary.index.ytdChangePct != null && (
+                        <span className="text-text-muted font-normal ml-2">YTD: {summary.index.ytdChangePct >= 0 ? '+' : ''}{fmt(summary.index.ytdChangePct)}%</span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm text-text-muted mb-1">NGX All-Share Index</div>
+                    <div className="text-2xl font-bold text-text-secondary">Index data unavailable</div>
+                  </>
+                )}
               </div>
-              <div className="text-right text-sm text-text-muted">As of 15:30 WAT</div>
+              <div className="text-right text-sm text-text-muted">
+                {new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Lagos' })} WAT
+              </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -116,12 +150,12 @@ export default function NgxPage() {
                 <div className="text-xs text-text-muted">Decliners</div>
               </div>
               <div className="text-center p-3 bg-background-tertiary rounded-xl">
-                <div className="text-lg font-bold">₦{(summary.marketCapTrn ?? 0).toFixed(1)}T</div>
-                <div className="text-xs text-text-muted">Market Cap</div>
+                <div className="text-lg font-bold">{summary.unchanged}</div>
+                <div className="text-xs text-text-muted">Unchanged</div>
               </div>
               <div className="text-center p-3 bg-background-tertiary rounded-xl">
-                <div className="text-lg font-bold">₦{(summary.valueTradedBnNgn ?? 0).toFixed(1)}B</div>
-                <div className="text-xs text-text-muted">Value Traded</div>
+                <div className="text-lg font-bold">₦{(summary.marketCapTrn ?? 0).toFixed(1)}T</div>
+                <div className="text-xs text-text-muted">Market Cap</div>
               </div>
             </div>
           </Card>
@@ -133,10 +167,7 @@ export default function NgxPage() {
               {(summary.sectorIndices ?? []).map((si) => (
                 <div key={si.name} className="flex items-center justify-between px-4 py-2.5">
                   <span className="text-sm text-text-secondary">{si.name}</span>
-                  <div className="flex items-center gap-4">
-                    <span className="font-mono text-sm">{fmt(si.value, 2)}</span>
-                    <ChangeCell pct={si.changePct} />
-                  </div>
+                  <ChangeCell pct={si.changePct} />
                 </div>
               ))}
             </div>
@@ -193,7 +224,7 @@ export default function NgxPage() {
                       <div className="text-xs text-text-muted truncate max-w-[120px]">{s.name}</div>
                     </div>
                     <div className="text-right font-mono text-xs text-text-muted">
-                      {(s.volume! / 1_000_000).toFixed(2)}M
+                      {fmtVolume(s.volume)}
                     </div>
                   </Link>
                 ))}

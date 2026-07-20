@@ -14,8 +14,8 @@ interface CardSummary {
   name: string;
   sector: string;
   price: number;
-  change_pct: number;
-  health_score: number;
+  changePct: number;
+  healthScore: number;
   rating: string;
   summary: string;
 }
@@ -118,9 +118,9 @@ export default function HealthCardsPage() {
                   </div>
                   <div className="text-right">
                     <div className="font-mono text-sm font-semibold">₦{card.price?.toLocaleString() ?? '—'}</div>
-                    <div className={`text-xs flex items-center justify-end gap-0.5 ${(card.change_pct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
-                      {(card.change_pct ?? 0) >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {(card.change_pct ?? 0) >= 0 ? '+' : ''}{(card.change_pct ?? 0).toFixed(1)}%
+                    <div className={`text-xs flex items-center justify-end gap-0.5 ${(card.changePct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
+                      {(card.changePct ?? 0) >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                      {(card.changePct ?? 0) >= 0 ? '+' : ''}{(card.changePct ?? 0).toFixed(1)}%
                     </div>
                   </div>
                 </div>
@@ -130,7 +130,7 @@ export default function HealthCardsPage() {
                     <span className="text-xs text-text-muted">Health Score</span>
                     <RatingBadge rating={card.rating} />
                   </div>
-                  <HealthBar score={card.health_score} />
+                  <HealthBar score={card.healthScore} />
                 </div>
 
                 <p className="text-xs text-text-secondary leading-relaxed line-clamp-3">{card.summary}</p>

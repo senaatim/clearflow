@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Target, TrendingUp, DollarSign, Zap } from 'lucide-react';
+import { RefreshCw, Target, TrendingUp, DollarSign, Zap, Sparkles } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/card';
 import { recommendationApi } from '@/lib/api-client';
 import type { Recommendation } from '@/types';
@@ -21,27 +21,43 @@ function formatTimeAgo(timestamp: string): string {
   const diffMs = now.getTime() - then.getTime();
   const diffMin = Math.floor(diffMs / (1000 * 60));
   const diffHour = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffMin < 60) return `${diffMin}m ago`;
-  return `${diffHour}h ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  return `${diffDay}d ago`;
 }
 
 export function AIInsightsPanel() {
   const [insights, setInsights] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
 
   const fetchInsights = useCallback(async () => {
     setLoading(true);
     try {
       const res = await recommendationApi.list({ limit: 4 });
       const data = res.data;
-      setInsights(Array.isArray(data) ? data : data.data ?? []);
+      setInsights(Array.isArray(data) ? data : (data?.data ?? []));
     } catch {
       setInsights([]);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const generateInsights = async () => {
+    setGenerating(true);
+    try {
+      await recommendationApi.generate();
+      await fetchInsights();
+    } catch {
+      // generation may not be available — just refresh
+      await fetchInsights();
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   useEffect(() => {
     fetchInsights();
@@ -52,16 +68,39 @@ export function AIInsightsPanel() {
       <CardHeader
         title="AI Insights"
         actions={
-          <button className="icon-btn" onClick={fetchInsights}>
+          <button className="icon-btn" onClick={fetchInsights} disabled={loading}>
             <RefreshCw className={`w-4 h-4 text-text-secondary ${loading ? 'animate-spin' : ''}`} />
           </button>
         }
       />
       <div className="flex flex-col gap-4">
         {loading ? (
-          <div className="text-sm text-text-muted text-center py-6">Loading insights...</div>
+          <>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 bg-background-tertiary rounded-xl animate-pulse" />
+            ))}
+          </>
         ) : insights.length === 0 ? (
-          <div className="text-sm text-text-muted text-center py-6">No insights available</div>
+          <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
+            <div className="w-10 h-10 rounded-xl bg-accent-primary/10 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-accent-primary" />
+            </div>
+            <div>
+              <div className="text-sm font-medium mb-1">No insights yet</div>
+              <div className="text-xs text-text-muted">Generate AI-powered recommendations based on your portfolio</div>
+            </div>
+            <button
+              onClick={generateInsights}
+              disabled={generating}
+              className="btn btn-primary text-xs px-4 py-2 mt-1"
+            >
+              {generating ? (
+                <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Generating...</>
+              ) : (
+                <><Sparkles className="w-3.5 h-3.5" /> Generate Insights</>
+              )}
+            </button>
+          </div>
         ) : (
           insights.map((insight) => {
             const Icon = iconMap[insight.type] ?? Target;

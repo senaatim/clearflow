@@ -126,7 +126,6 @@ export default function PortfolioPage() {
 
   const handleAddPosition = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!portfolioId) return;
 
     setFormError('');
     const qty = parseFloat(form.quantity);
@@ -140,7 +139,16 @@ export default function PortfolioPage() {
 
     setIsSubmitting(true);
     try {
-      await assetApi.add(portfolioId, {
+      // Auto-create a default portfolio if this is a new account
+      let activePortfolioId = portfolioId;
+      if (!activePortfolioId) {
+        const createRes = await portfolioApi.create({ name: 'My Portfolio', type: 'investment' });
+        activePortfolioId = createRes.data.id;
+        setPortfolioId(activePortfolioId);
+        setPortfolioName(createRes.data.name);
+      }
+
+      await assetApi.add(activePortfolioId, {
         symbol: form.symbol.toUpperCase().trim(),
         name: form.name.trim(),
         assetType: form.assetType,
@@ -148,7 +156,7 @@ export default function PortfolioPage() {
         quantity: qty,
         averageCost: cost,
       });
-      const assetsRes = await assetApi.list(portfolioId);
+      const assetsRes = await assetApi.list(activePortfolioId);
       const assets = Array.isArray(assetsRes.data) ? assetsRes.data : [];
       setHoldings(enrichAssets(assets));
       setShowAddModal(false);

@@ -158,7 +158,7 @@ export default function HealthCardDetailPage() {
           <div className="mt-4 space-y-2 text-xs text-text-muted">
             <div className="flex justify-between"><span>Market Cap</span><span className="font-mono text-text-primary">₦{(card.marketCapBn ?? 0).toLocaleString()}B</span></div>
             <div className="flex justify-between"><span>Revenue</span><span className="font-mono text-text-primary">₦{(card.revenueBn ?? 0).toFixed(1)}B</span></div>
-            <div className="flex justify-between"><span>Revenue Growth</span><span className="font-mono text-success">+{card.revenueGrowth ?? 0}%</span></div>
+            <div className="flex justify-between"><span>Revenue Growth</span><span className={`font-mono ${(card.revenueGrowth ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>{(card.revenueGrowth ?? 0) >= 0 ? '+' : ''}{card.revenueGrowth ?? 0}%</span></div>
             <div className="flex justify-between"><span>Dividend Yield</span><span className="font-mono text-text-primary">{card.dividendYield ?? 0}%</span></div>
           </div>
         </Card>

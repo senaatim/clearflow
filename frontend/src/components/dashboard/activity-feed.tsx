@@ -35,7 +35,7 @@ export function ActivityFeed({ portfolioId }: ActivityFeedProps) {
       setIsLoading(true);
       try {
         const res = await transactionApi.list(portfolioId, { limit: 10 });
-        const transactions = Array.isArray(res.data) ? res.data : [];
+        const transactions = Array.isArray(res.data) ? res.data : (res.data?.transactions ?? []);
         const mapped: ActivityItem[] = transactions.map((tx: Record<string, unknown>) => ({
           id: tx.id as string,
           type: ((tx.type as string) || 'buy') as ActivityItem['type'],

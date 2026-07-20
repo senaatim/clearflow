@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { LOGO_SRC } from './logo-data';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -199,11 +200,15 @@ export function Sidebar() {
         </button>
 
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-8 md:mb-12">
-          <div className="w-9 h-9 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-lg flex items-center justify-center font-mono font-bold text-lg text-background-primary">
-            CF
-          </div>
-          <div className="text-xl font-semibold tracking-tight">ClearFlow</div>
+        <div className="flex items-center mb-8 md:mb-12 px-1">
+          <Link href="/dashboard" onClick={handleNavClick}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={LOGO_SRC}
+              alt="ClearFlow"
+              style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
+            />
+          </Link>
         </div>
 
         {/* Admin Panel Link */}
@@ -238,7 +243,7 @@ export function Sidebar() {
         {user && (
           <div className="mt-auto pt-4 md:pt-6 border-t border-border">
             <div className="flex items-center gap-3 mb-4 px-2 md:px-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center font-semibold text-background-primary">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center font-semibold text-white">
                 {user.firstName[0]}{user.lastName[0]}
               </div>
               <div className="flex-1 min-w-0">

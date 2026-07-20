@@ -5,7 +5,7 @@ import { Header } from '@/components/layout/header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { screenerApi } from '@/lib/api-client';
-import { Search, RefreshCw, TrendingUp, TrendingDown, Lock, SlidersHorizontal } from 'lucide-react';
+import { Search, RefreshCw, TrendingUp, TrendingDown, Lock, SlidersHorizontal, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface Stock {
@@ -13,12 +13,12 @@ interface Stock {
   name: string;
   sector: string;
   price: number;
-  change_pct: number;
-  market_cap: number;
-  pe_ratio: number;
-  revenue_growth: number;
-  dividend_yield: number;
-  health_score: number;
+  changePct: number;
+  marketCap: number;
+  peRatio: number;
+  revenueGrowth: number;
+  dividendYield: number;
+  healthScore: number;
   volume: number;
 }
 
@@ -34,7 +34,8 @@ function fmtCap(n: number | undefined | null) {
   return `₦${(n / 1e6).toFixed(0)}M`;
 }
 
-function HealthScore({ score }: { score: number }) {
+function HealthScore({ score }: { score: number | null | undefined }) {
+  if (score == null) return <span className="text-sm text-text-muted">—</span>;
   const colour =
     score >= 80 ? 'text-success' :
     score >= 65 ? 'text-warning' : 'text-accent-danger';
@@ -46,6 +47,7 @@ export default function ScreenerPage() {
   const [sectors, setSectors] = useState<string[]>([]);
   const [isLimited, setIsLimited] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   // Filters
@@ -63,6 +65,7 @@ export default function ScreenerPage() {
 
   const loadStocks = async () => {
     setIsLoading(true);
+    setError('');
     try {
       const params: Record<string, any> = { sortBy };
       if (sector) params.sector = sector;
@@ -74,10 +77,11 @@ export default function ScreenerPage() {
 
       const res = await screenerApi.getStocks(params);
       setStocks(res.data.stocks || []);
-      setIsLimited(res.data.isLimited);
+      setIsLimited(res.data.isLimited ?? false);
       setSectors(res.data.sectors || []);
-    } catch (err) {
-      console.error('Failed to load stocks:', err);
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail ?? 'Failed to load stock data. Please try again.';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -111,6 +115,14 @@ export default function ScreenerPage() {
           </div>
         }
       />
+
+      {error && (
+        <div className="mb-6 p-4 rounded-xl bg-accent-danger/5 border border-accent-danger/20 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-accent-danger shrink-0" />
+          <p className="text-sm text-accent-danger">{error}</p>
+          <button onClick={loadStocks} className="ml-auto text-xs underline text-accent-danger">Retry</button>
+        </div>
+      )}
 
       {isLimited && (
         <div className="mb-6 p-4 rounded-xl bg-accent-primary/5 border border-accent-primary/20 flex items-center justify-between gap-4">
@@ -218,6 +230,13 @@ export default function ScreenerPage() {
                 </tr>
               </thead>
               <tbody>
+                {stocks.length === 0 && !isLoading && (
+                  <tr>
+                    <td colSpan={9} className="py-12 text-center text-sm text-text-muted">
+                      No stocks match your filters.
+                    </td>
+                  </tr>
+                )}
                 {stocks.map((s) => (
                   <tr key={s.symbol} className="border-b border-border/50 hover:bg-background-tertiary transition-colors">
                     <td className="py-3 px-4">
@@ -231,16 +250,16 @@ export default function ScreenerPage() {
                     </td>
                     <td className="py-3 px-4 text-right font-mono text-sm">{fmt(s.price)}</td>
                     <td className="py-3 px-4 text-right">
-                      <span className={`text-sm font-medium flex items-center justify-end gap-0.5 ${(s.change_pct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
-                        {(s.change_pct ?? 0) >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        {(s.change_pct ?? 0) >= 0 ? '+' : ''}{fmt(s.change_pct)}%
+                      <span className={`text-sm font-medium flex items-center justify-end gap-0.5 ${(s.changePct ?? 0) >= 0 ? 'text-success' : 'text-accent-danger'}`}>
+                        {(s.changePct ?? 0) >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {(s.changePct ?? 0) >= 0 ? '+' : ''}{fmt(s.changePct)}%
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right text-sm text-text-secondary font-mono">{fmtCap(s.market_cap)}</td>
-                    <td className="py-3 px-4 text-right text-sm font-mono">{fmt(s.pe_ratio, 1)}x</td>
-                    <td className="py-3 px-4 text-right text-sm text-success font-mono">+{fmt(s.revenue_growth)}%</td>
-                    <td className="py-3 px-4 text-right text-sm font-mono">{fmt(s.dividend_yield)}%</td>
-                    <td className="py-3 px-4 text-right"><HealthScore score={s.health_score} /></td>
+                    <td className="py-3 px-4 text-right text-sm text-text-secondary font-mono">{fmtCap(s.marketCap)}</td>
+                    <td className="py-3 px-4 text-right text-sm font-mono">{fmt(s.peRatio, 1)}x</td>
+                    <td className="py-3 px-4 text-right text-sm text-success font-mono">+{fmt(s.revenueGrowth)}%</td>
+                    <td className="py-3 px-4 text-right text-sm font-mono">{fmt(s.dividendYield)}%</td>
+                    <td className="py-3 px-4 text-right"><HealthScore score={s.healthScore} /></td>
                   </tr>
                 ))}
               </tbody>

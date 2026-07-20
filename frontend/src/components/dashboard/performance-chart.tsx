@@ -19,7 +19,7 @@ interface PerformanceChartProps {
 }
 
 const periods = ['1M', '3M', '6M', '1Y', 'ALL'] as const;
-const periodMap: Record<string, string> = { '1M': '1m', '3M': '3m', '6M': '6m', '1Y': '1y', 'ALL': 'max' };
+const periodMap: Record<string, string> = { '1M': '1m', '3M': '3m', '6M': '6m', '1Y': '1y', 'ALL': 'all' };
 
 export function PerformanceChart({ portfolioId }: PerformanceChartProps) {
   const [chartData, setChartData] = useState<{ date: string; value: number }[]>([]);
@@ -84,17 +84,18 @@ export function PerformanceChart({ portfolioId }: PerformanceChartProps) {
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00ffaa" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#00ffaa" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#29ABE2" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#29ABE2" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#252d3f" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#1A3050" vertical={false} />
               <XAxis
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: '#5a6478', fontSize: 10 }}
                 interval="preserveStartEnd"
+                minTickGap={40}
               />
               <YAxis
                 axisLine={false}
@@ -117,7 +118,7 @@ export function PerformanceChart({ portfolioId }: PerformanceChartProps) {
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#00ffaa"
+                stroke="#29ABE2"
                 strokeWidth={2}
                 fill="url(#colorValue)"
               />
