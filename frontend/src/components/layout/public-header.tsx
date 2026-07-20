@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Menu, X, TrendingUp } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LOGO_SRC } from '@/components/layout/logo-data';
 
 interface PublicHeaderProps {
   transparent?: boolean;
@@ -32,10 +33,8 @@ export function PublicHeader({ transparent = false }: PublicHeaderProps) {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-background-primary" />
-            </div>
-            <span className="text-xl font-bold text-text-primary">ClearFlow</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={LOGO_SRC} alt="ClearFlow" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
           </Link>
 
           {/* Desktop Navigation */}

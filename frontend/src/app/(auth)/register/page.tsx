@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { authApi, handleApiError } from '@/lib/api-client';
+import { LOGO_SRC } from '@/components/layout/logo-data';
 
 const SPECIAL_CHARS = /[!@#$%^&*()\-_=+\[\]{}|;':",./<>?\\`~]/;
 
@@ -111,10 +112,8 @@ export default function RegisterPage() {
     return (
       <div className="space-y-6 text-center">
         <div className="inline-flex items-center gap-3 mb-2">
-          <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center font-mono font-bold text-2xl text-background-primary">
-            CF
-          </div>
-          <span className="text-2xl font-bold tracking-tight">ClearFlow</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={LOGO_SRC} alt="ClearFlow" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
         </div>
         <Card className="p-8 space-y-4">
           <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto">
@@ -144,10 +143,8 @@ export default function RegisterPage() {
       {/* Logo */}
       <div className="text-center">
         <div className="inline-flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center font-mono font-bold text-2xl text-background-primary">
-            CF
-          </div>
-          <span className="text-2xl font-bold tracking-tight">ClearFlow</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={LOGO_SRC} alt="ClearFlow" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
         </div>
         <h1 className="text-2xl font-bold mb-2">Create your account</h1>
         <p className="text-text-secondary">Start your investment journey today</p>

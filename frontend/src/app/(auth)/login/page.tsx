@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi, handleApiError } from '@/lib/api-client';
+import { LOGO_SRC } from '@/components/layout/logo-data';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -73,10 +74,8 @@ export default function LoginPage() {
       {/* Logo */}
       <div className="text-center">
         <div className="inline-flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-xl flex items-center justify-center font-mono font-bold text-2xl text-background-primary">
-            CF
-          </div>
-          <span className="text-2xl font-bold tracking-tight">ClearFlow</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={LOGO_SRC} alt="ClearFlow" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
         </div>
         <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
         <p className="text-text-secondary">Sign in to your investment dashboard</p>

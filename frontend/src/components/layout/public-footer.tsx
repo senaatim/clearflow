@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp } from 'lucide-react';
 import { DISCLAIMERS } from '@/lib/subscription';
+import { LOGO_SRC } from '@/components/layout/logo-data';
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
@@ -34,10 +34,8 @@ export function PublicFooter() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-background-primary" />
-              </div>
-              <span className="text-xl font-bold text-text-primary">ClearFlow</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={LOGO_SRC} alt="ClearFlow" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
             </Link>
             <p className="text-sm text-text-secondary max-w-xs">
               Financial intelligence platform helping retail investors make smarter investment decisions.
@@ -110,9 +108,7 @@ export function PublicFooter() {
           <p className="text-sm text-text-muted">
             &copy; {currentYear} ClearFlow. All rights reserved.
           </p>
-          <p className="text-xs text-text-muted">
-            ClearFlow is not a registered investment advisor. Please consult with a qualified financial advisor before making investment decisions.
-          </p>
+
         </div>
       </div>
     </footer>

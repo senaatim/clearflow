@@ -206,7 +206,7 @@ export function Sidebar() {
             <img
               src={LOGO_SRC}
               alt="ClearFlow"
-              style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
+              className="w-16 h-16 md:w-[120px] md:h-[120px] rounded-full object-cover cursor-pointer"
             />
           </Link>
         </div>
