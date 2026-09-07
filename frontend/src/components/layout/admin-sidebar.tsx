@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Shield,
   MessageSquare,
+  FileCode, // Added icon for CMS Studio
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
@@ -33,6 +34,11 @@ const operationsItems = [
 const dataItems = [
   { href: '/admin/portfolios', label: 'Portfolios', icon: PieChart },
   { href: '/admin/transactions', label: 'Transactions', icon: ArrowRightLeft },
+];
+
+// Added Content section items
+const contentItems = [
+  { href: '/admin/studio', label: 'CMS Studio', icon: FileCode },
 ];
 
 interface NavSectionProps {
@@ -114,6 +120,7 @@ export function AdminSidebar() {
         <NavSection label="Overview" items={overviewItems} onItemClick={handleNavClick} />
         <NavSection label="Operations" items={operationsItems} onItemClick={handleNavClick} />
         <NavSection label="Data" items={dataItems} onItemClick={handleNavClick} />
+        <NavSection label="Content" items={contentItems} onItemClick={handleNavClick} />
       </nav>
 
       {/* User Info */}

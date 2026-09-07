@@ -20,6 +20,7 @@ export function PublicHeader({ transparent = false }: PublicHeaderProps) {
     { href: '/pricing', label: 'Pricing' },
     { href: '/about', label: 'About Us' },
     { href: '/contact', label: 'Contact' },
+    { href: '/blog', label: 'Blogs' },
   ];
 
   return (
