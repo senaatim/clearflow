@@ -8,7 +8,7 @@ import { schemaTypes } from './src/sanity/schemaTypes';
 export default defineConfig({
   name: 'clearflow-cms',
   title: 'ClearFlow CMS',
-  basePath: '/studio',
+  basePath: '/admin/studio',
 
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
   dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
