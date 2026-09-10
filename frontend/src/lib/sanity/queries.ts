@@ -1,4 +1,4 @@
-import { sanityClient } from './client';
+import { client } from '@/sanity/schemaTypes/client';
 import { groq } from 'next-sanity';
 
 export interface SanityPost {
@@ -51,13 +51,13 @@ const slugsQuery = groq`
 `;
 
 export async function getAllPosts(): Promise<SanityPost[]> {
-  return sanityClient.fetch(postsQuery);
+  return client.fetch(postsQuery, {}, { cache: 'no-store' });
 }
 
 export async function getPostBySlug(slug: string): Promise<SanityPostFull | null> {
-  return sanityClient.fetch(postBySlugQuery, { slug });
+  return client.fetch(postBySlugQuery, { slug }, { cache: 'no-store' });
 }
 
 export async function getAllPostSlugs(): Promise<{ slug: string }[]> {
-  return sanityClient.fetch(slugsQuery);
+  return client.fetch(slugsQuery, {}, { cache: 'no-store' });
 }
